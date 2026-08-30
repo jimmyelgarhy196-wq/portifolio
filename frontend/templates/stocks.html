@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Stocks — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Stocks</h1>
+    <div class="page-sub">{{ rows | length }} instruments in the {{ index|upper }} universe</div>
+  </div>
+  <div class="spacer"></div>
+  {% for i in ['all','egx30','egx70','egx100'] %}
+  <a class="btn {{ 'btn-primary' if index==i }}" href="/stocks?index={{ i }}">{{ i|upper }}</a>
+  {% endfor %}
+</div>
+
+<div class="panel">
+  <div class="panel-body flush">
+    <div class="table-scroll tall">
+      <table class="data">
+        <thead><tr><th>Ticker</th><th>Name</th><th>Sector</th><th>Industry</th><th class="num">Price</th><th class="num">Score</th><th>Index</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr onclick="location.href='/stocks/{{ r.company.ticker }}'" style="cursor:pointer">
+            <td><span class="ticker">{{ r.company.ticker }}</span></td>
+            <td class="dim">{{ r.company.name[:40] }}</td>
+            <td class="faint">{{ r.company.sector or '—' }}</td>
+            <td class="faint">{{ r.company.industry or '—' }}</td>
+            <td class="num">{{ r.price | fmt_num(2) }}</td>
+            <td class="num"><span class="score {{ r.score | score_class }}">{{ r.score | fmt_num(0) }}</span></td>
+            <td>
+              {% if r.company.in_egx30 %}<span class="tag">30</span>{% endif %}
+              {% if r.company.in_egx70 %}<span class="tag">70</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

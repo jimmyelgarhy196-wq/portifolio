@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Theses — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1 class="page-title">Investment Theses</h1>
+    <div class="page-sub">{{ theses|length }} thesis records · updated weekly rather than replaced</div></div>
+  <div class="spacer"></div>
+  {% for s in ['ACTIVE','WATCH','INVALIDATED','EXIT_PROPOSED'] %}
+  <a class="btn {{ 'btn-primary' if status==s }}" href="/theses?status={{ s }}">{{ s|replace('_',' ') }}</a>
+  {% endfor %}
+  <a class="btn {{ 'btn-primary' if not status }}" href="/theses">All</a>
+</div>
+
+<div class="panel">
+  <div class="panel-body flush">
+    {% if theses %}
+    <div class="table-scroll tall">
+      <table class="data">
+        <thead><tr>
+          <th>Ref</th><th>Ticker</th><th>Dir</th><th>Strategy</th>
+          <th class="num">Score</th><th class="num">Entry</th><th class="num">Target</th>
+          <th class="num">Invalid.</th><th class="num">Expected</th><th class="num">R/R</th>
+          <th class="num">Conv.</th><th>Status</th><th class="num">v</th><th>Updated</th>
+        </tr></thead>
+        <tbody>
+        {% for t in theses %}
+        <tr onclick="location.href='/theses/{{ t.thesis_id }}'" style="cursor:pointer">
+          <td class="mono">{{ t.reference }}</td>
+          <td><span class="ticker">{{ t.ticker }}</span></td>
+          <td><span class="tag tag-{{ t.direction|lower }}">{{ t.direction }}</span></td>
+          <td class="faint">{{ t.strategy|replace('_',' ') }}</td>
+          <td class="num"><span class="score {{ t.alpha_score | score_class }}">{{ t.alpha_score | fmt_num(0) }}</span></td>
+          <td class="num">{{ t.entry_price | fmt_num(2) }}</td>
+          <td class="num">{{ t.target_price | fmt_num(2) }}</td>
+          <td class="num">{{ t.invalidation_price | fmt_num(2) }}</td>
+          <td class="num {{ t.expected_return | direction_class }}">{{ t.expected_return | fmt_pct(1,'—',true) }}</td>
+          <td class="num {{ 'down' if t.risk_reward and t.risk_reward < 1.5 else '' }}">{{ t.risk_reward | fmt_num(2) }}</td>
+          <td class="num">{{ t.conviction | fmt_num(1) }}</td>
+          <td><span class="tag {{ 'tag-sell' if t.status=='INVALIDATED' else 'tag-hold' }}">{{ t.status }}</span></td>
+          <td class="num faint">{{ t.version }}</td>
+          <td class="faint mono" style="font-size:10.5px">{{ t.updated_at.date() if t.updated_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="title">No theses yet</div>
+      <div class="hint">Run the research pipeline: <code>python scripts/research.py --index egx30</code></div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

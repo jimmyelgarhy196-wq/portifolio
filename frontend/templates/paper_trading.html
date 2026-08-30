@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Paper Trading — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1 class="page-title">Paper Trading</h1>
+    <div class="page-sub">Simulated execution only — this system has no broker integration.</div></div>
+</div>
+
+{% if message %}<div class="flash ok">{{ message }}</div>{% endif %}
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+
+<div class="grid grid-4" style="margin-bottom:14px">
+  <div class="stat-tile"><div class="label">Cash Available</div>
+    <div class="value">{{ portfolio.currency }} {{ state.cash | fmt_num(0) }}</div></div>
+  <div class="stat-tile"><div class="label">Portfolio Value</div>
+    <div class="value">{{ portfolio.currency }} {{ state.total_value | fmt_num(0) }}</div></div>
+  <div class="stat-tile"><div class="label">Positions</div>
+    <div class="value">{{ state.positions | length }}</div></div>
+  <div class="stat-tile"><div class="label">Mode</div>
+    <div class="value" style="color:var(--amber);font-size:17px">PAPER</div>
+    <div class="sub">no live execution path exists</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Execute Simulated Trade</span></div>
+  <div class="panel-body">
+    <form method="post" action="/paper-trading/execute" class="form-row" style="margin:0">
+      <div class="field"><label>Ticker</label>
+        <select name="ticker" required style="min-width:130px">
+          {% for c in companies %}<option value="{{ c.ticker }}">{{ c.ticker }} — {{ c.name[:26] }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Side</label>
+        <select name="side" required>
+          <option value="BUY">BUY</option><option value="SELL">SELL</option>
+          <option value="SHORT">SHORT (paper)</option><option value="COVER">COVER</option>
+        </select>
+      </div>
+      <div class="field"><label>Quantity</label><input type="number" name="quantity" min="1" step="1" value="1000" required style="width:104px"></div>
+      <div class="field"><label>Strategy</label>
+        <select name="strategy">
+          <option value="fundamental_long">Fundamental Long</option>
+          <option value="technical_swing">Technical Swing</option>
+          <option value="special_situations">Special Situations</option>
+          <option value="bearish_short">Bearish / Short</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1;min-width:200px"><label>Note</label><input type="text" name="note" placeholder="Rationale"></div>
+      <button class="btn btn-primary" type="submit">Execute (paper)</button>
+    </form>
+    <div class="source-note">
+      Fills apply commission and slippage from <code>config/risk.yaml</code>, with
+      slippage always working against you. A trade cannot execute without a stored
+      price — the system will not invent one.
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Trade History</span></div>
+  <div class="panel-body flush">
+    {% if trades %}
+    <div class="table-scroll tall">
+      <table class="data">
+        <thead><tr><th>Time</th><th>Ticker</th><th>Side</th><th class="num">Qty</th><th class="num">Fill</th><th class="num">Commission</th><th class="num">Slippage</th><th class="num">Realised</th><th>Note</th></tr></thead>
+        <tbody>
+        {% for t in trades %}
+        <tr>
+          <td class="mono faint">{{ t.executed_at.strftime('%Y-%m-%d %H:%M') if t.executed_at else '—' }}</td>
+          <td><span class="ticker">{{ t.ticker }}</span></td>
+          <td><span class="tag tag-{{ 'buy' if t.side in ['BUY','COVER'] else 'sell' }}">{{ t.side }}</span></td>
+          <td class="num">{{ t.quantity | fmt_num(0) }}</td>
+          <td class="num">{{ t.price | fmt_num(3) }}</td>
+          <td class="num faint">{{ t.commission | fmt_num(2) }}</td>
+          <td class="num faint">{{ t.slippage | fmt_num(2) }}</td>
+          <td class="num {{ t.realized_pnl | direction_class }}">{{ t.realized_pnl | fmt_num(2) }}</td>
+          <td class="faint" style="white-space:normal">{{ (t.note or '')[:50] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<div class="empty-state"><div class="hint">No simulated trades yet.</div></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

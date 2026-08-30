@@ -1,0 +1,541 @@
+{% extends "base.html" %}
+{% block title %}{{ company.ticker }} — EGX ALPHA{% endblock %}
+{% block content %}
+{% set a = analysis.alpha %}
+{% set t = analysis.technical %}
+{% set f = analysis.fundamental %}
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">{{ company.ticker }}</h1>
+    <div class="page-sub">
+      {{ company.name }} · {{ company.sector or 'Unclassified' }} · {{ company.exchange }} ·
+      {{ company.currency }}
+      {% if company.in_egx30 %}<span class="tag">EGX30</span>{% endif %}
+      {% if company.in_egx70 %}<span class="tag">EGX70</span>{% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="/research?ticker={{ company.ticker }}">Run Research</a>
+  <a class="btn btn-primary" href="/paper-trading">Paper Trade</a>
+</div>
+
+<!-- ---------- Score header ---------- -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">EGX ALPHA Score</span>
+    <span class="panel-meta">
+      as of {{ a.as_of }} · confidence {{ a.score.confidence.value }} ·
+      coverage {{ a.score.coverage | fmt_pct(0) }}
+      {% if score_delta %}
+        · <span class="{{ score_delta.delta | direction_class }}">
+          {{ score_delta['from'] | fmt_num(0) }} → {{ score_delta['to'] | fmt_num(0) }}
+          ({{ score_delta.delta | fmt_num(1) }})
+        </span>
+      {% endif %}
+    </span>
+  </div>
+  <div class="panel-body">
+    <div style="display:flex;align-items:center;gap:26px;flex-wrap:wrap">
+      <div style="text-align:center;min-width:118px">
+        <div style="font-family:var(--mono);font-size:44px;font-weight:700;line-height:1;
+                    color:{{ 'var(--up)' if (a.value or 0) >= 70 else ('var(--amber)' if (a.value or 0) >= 50 else 'var(--down)') }}">
+          {{ a.value | fmt_num(0) }}
+        </div>
+        <div class="faint" style="font-size:10.5px;letter-spacing:.09em">OUT OF 100</div>
+      </div>
+      <div style="flex:1;min-width:290px">
+        {% for row in a.score.breakdown() %}
+        <div class="breakdown-row {{ '' if row.available else 'missing' }}">
+          <div class="breakdown-label">{{ row.name | replace('_',' ') }}</div>
+          <div class="breakdown-bar">
+            {% if row.available %}
+            <div class="breakdown-fill" style="width:{{ row.value }}%"></div>
+            {% endif %}
+          </div>
+          <div class="breakdown-value">{{ row.value | fmt_num(1) if row.available else 'n/a' }}</div>
+          <div class="breakdown-weight">{{ (row.effective_weight * 100) | round(0) | int }}%</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if a.warnings %}
+    <div class="divider"></div>
+    {% for w in a.warnings %}
+    <div class="alert warning"><div><div class="alert-msg">⚠ {{ w }}</div></div></div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- ---------- Overview ---------- -->
+<div class="grid grid-4" style="margin-bottom:14px">
+  <div class="stat-tile">
+    <div class="label">Price</div>
+    <div class="value">{{ analysis.price_series.last_close | fmt_num(2) }}</div>
+    <div class="sub">{{ analysis.price_series.last_date or '—' }}</div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Market Cap</div>
+    <div class="value" style="font-size:17px">
+      {% if f and f.metrics.market_cap and f.metrics.market_cap.available %}
+        {{ (f.metrics.market_cap.value / 1e9) | fmt_num(2) }}B
+      {% else %}<span class="unavailable">—</span>{% endif %}
+    </div>
+    <div class="sub">
+      {% if company.shares_outstanding %}{{ (company.shares_outstanding/1e6) | fmt_num(0) }}M shares
+      {% else %}<span class="unavailable">share count unavailable</span>{% endif %}
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Volume / 20d avg</div>
+    <div class="value" style="font-size:17px">{{ t.volume_ratio | fmt_x(2) if t else '—' }}</div>
+    <div class="sub">{{ (t.volume / 1000) | fmt_num(0) ~ 'K' if t and t.volume else '—' }}</div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Trend</div>
+    <div class="value" style="font-size:15px">{{ (t.trend if t else 'UNKNOWN') | replace('_',' ') }}</div>
+    <div class="sub">
+      RSI {{ t.rsi14 | fmt_num(1) if t else '—' }} ·
+      vol {{ t.volatility_20d | fmt_pct(0) if t else '—' }}
+    </div>
+  </div>
+</div>
+
+<!-- ---------- Chart ---------- -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Price &amp; Volume</span>
+    <span class="panel-meta">
+      {{ analysis.price_series | length }} bars · source {{ analysis.price_series.source or 'unknown' }}
+    </span>
+  </div>
+  <div class="panel-body">
+    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--accent)"></span>SMA 20</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--amber)"></span>SMA 50</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#b18cf0"></span>SMA 200</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--text-faint)"></span>support / resistance</div>
+    </div>
+    <div class="divider"></div>
+    <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin-bottom:3px">RSI (14)</div>
+    <div class="chart-wrap"><canvas id="rsiChart"></canvas></div>
+    <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin:9px 0 3px">MACD (12,26,9)</div>
+    <div class="chart-wrap"><canvas id="macdChart"></canvas></div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <!-- ---------- Fundamentals ---------- -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Fundamentals</span>
+      <span class="panel-meta">
+        {% if f and not f.insufficient_data %}
+          {{ f.latest_period }} · {{ f.source }}
+        {% else %}no data{% endif %}
+      </span>
+    </div>
+    <div class="panel-body flush">
+      {% if f and not f.insufficient_data %}
+      <table class="data">
+        <tbody>
+          {% for key, label in [
+            ('revenue_growth','Revenue growth (YoY)'), ('revenue_cagr','Revenue CAGR'),
+            ('ebitda_margin','EBITDA margin'), ('operating_margin','Operating margin'),
+            ('net_margin','Net margin'), ('roe','Return on equity'),
+            ('roa','Return on assets'), ('roic','Return on invested capital'),
+            ('debt_to_equity','Debt / equity'), ('net_debt_to_ebitda','Net debt / EBITDA'),
+            ('interest_coverage','Interest coverage'), ('current_ratio','Current ratio'),
+            ('free_cash_flow','Free cash flow'), ('fcf_margin','FCF margin'),
+            ('cash_conversion','Cash conversion')] %}
+            {% set m = f.metrics.get(key) %}
+            <tr>
+              <td class="dim">{{ label }}</td>
+              <td class="num {{ '' if (m and m.available) else 'unavailable' }}">
+                {{ m.formatted() if m else '—' }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <div class="title">No financial statements</div>
+        <div class="hint">
+          {{ f.note if f else 'No fundamental data is stored for this company.' }}
+          <br><br>Supply audited figures at
+          <code>data/manual/fundamentals/{{ company.ticker }}.csv</code>
+          then run <code>python scripts/ingest.py --dataset fundamentals</code>.
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ---------- Valuation ---------- -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Valuation</span>
+      <span class="panel-meta">
+        {% if f and f.peer_context %}vs {{ f.peer_context.values()|list|first is defined and (f.peer_context.values()|list|first).count }} sector peers{% endif %}
+      </span>
+    </div>
+    <div class="panel-body flush">
+      {% if f and not f.insufficient_data %}
+      <table class="data">
+        <thead><tr><th>Metric</th><th class="num">Value</th><th class="num">Sector median</th></tr></thead>
+        <tbody>
+          {% for key, label in [
+            ('pe','P/E'), ('pb','P/B'), ('ps','P/S'),
+            ('ev_ebitda','EV/EBITDA'), ('ev_sales','EV/Sales'),
+            ('fcf_yield','FCF yield'), ('earnings_yield','Earnings yield'),
+            ('dividend_yield','Dividend yield')] %}
+            {% set m = f.metrics.get(key) %}
+            {% set peer = f.peer_context.get(key) %}
+            <tr>
+              <td class="dim">{{ label }}</td>
+              <td class="num {{ '' if (m and m.available) else 'unavailable' }}">{{ m.formatted() if m else '—' }}</td>
+              <td class="num faint">{{ peer.median | fmt_num(2) if peer else '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% for key, m in f.metrics.items() %}
+        {% if m.note and not m.available %}
+          <div class="source-note" style="padding:0 12px 9px">⚠ {{ m.name }}: {{ m.note }}</div>
+        {% endif %}
+      {% endfor %}
+      {% else %}
+      <div class="empty-state"><div class="hint">Valuation requires financial statements and a share count.</div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ---------- Technical detail + signals ---------- -->
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Technical Indicators</span></div>
+    <div class="panel-body flush">
+      {% if t and not t.insufficient_data %}
+      <table class="data">
+        <tbody>
+          {% for label, value in [
+            ('SMA 20', t.sma20), ('SMA 50', t.sma50), ('SMA 100', t.sma100), ('SMA 200', t.sma200),
+            ('EMA 20', t.ema20), ('EMA 50', t.ema50), ('ATR (14)', t.atr14)] %}
+          <tr><td class="dim">{{ label }}</td><td class="num">{{ value | fmt_num(2) }}</td></tr>
+          {% endfor %}
+          <tr><td class="dim">ATR % of price</td><td class="num">{{ t.atr_pct | fmt_pct(2) }}</td></tr>
+          <tr><td class="dim">Bollinger position</td><td class="num">{{ t.bb_position | fmt_num(2) }}</td></tr>
+          <tr><td class="dim">1m / 3m return</td><td class="num">{{ t.momentum_1m | fmt_pct(1,'—',true) }} / {{ t.momentum_3m | fmt_pct(1,'—',true) }}</td></tr>
+          <tr><td class="dim">6m / 12m return</td><td class="num">{{ t.momentum_6m | fmt_pct(1,'—',true) }} / {{ t.momentum_12m | fmt_pct(1,'—',true) }}</td></tr>
+          <tr><td class="dim">Relative strength 3m</td><td class="num {{ t.relative_strength_3m | direction_class }}">{{ t.relative_strength_3m | fmt_pct(1,'—',true) }}</td></tr>
+          <tr><td class="dim">Support</td><td class="num">{{ t.support_levels | map('round', 2) | join(' · ') if t.support_levels else '—' }}</td></tr>
+          <tr><td class="dim">Resistance</td><td class="num">{{ t.resistance_levels | map('round', 2) | join(' · ') if t.resistance_levels else '—' }}</td></tr>
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><div class="hint">{{ t.note if t else 'No price history stored.' }}</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Detected Signals</span>
+      <span class="panel-meta">{{ t.signals | length if t else 0 }} active</span>
+    </div>
+    <div class="panel-body">
+      {% if t and t.signals %}
+        {% for s in t.signals %}
+        <div class="alert {{ 'critical' if s.direction=='bearish' else ('' if s.direction=='bullish' else 'warning') }}">
+          <div>
+            <div class="alert-title">
+              <span class="{{ 'up' if s.direction=='bullish' else ('down' if s.direction=='bearish' else 'dim') }}">
+                {{ s.name | replace('_',' ') }}
+              </span>
+              <span class="faint mono" style="font-size:10.5px">strength {{ s.strength }}</span>
+            </div>
+            <div class="alert-msg">{{ s.description }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="faint" style="font-size:12px">No technical signals are currently active.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ---------- AI research ---------- -->
+{% if thesis %}
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">AI Research — Thesis {{ thesis.reference }}</span>
+    <span class="panel-meta">
+      v{{ thesis.version }} · {{ thesis.generated_by }} ·
+      updated {{ thesis.updated_at.date() if thesis.updated_at else '—' }} ·
+      <a href="/theses/{{ thesis.thesis_id }}">full thesis →</a>
+    </span>
+  </div>
+  <div class="panel-body">
+    <div class="grid grid-4" style="margin-bottom:13px">
+      <div class="stat-tile">
+        <div class="label">Recommendation</div>
+        <div class="value" style="font-size:19px">
+          <span class="tag tag-{{ thesis.direction|lower }}">{{ thesis.direction }}</span>
+        </div>
+        <div class="sub">{{ thesis.strategy | replace('_',' ') }}</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Target / Invalidation</div>
+        <div class="value" style="font-size:17px">{{ thesis.target_price | fmt_num(2) }}</div>
+        <div class="sub">stop {{ thesis.invalidation_price | fmt_num(2) }}</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Expected return</div>
+        <div class="value {{ thesis.expected_return | direction_class }}" style="font-size:19px">
+          {{ thesis.expected_return | fmt_pct(1,'—',true) }}
+        </div>
+        <div class="sub">R/R {{ thesis.risk_reward | fmt_num(2) }}:1 · downside {{ thesis.expected_downside | fmt_pct(1,'—',true) }}</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Conviction</div>
+        <div class="value" style="font-size:19px">{{ thesis.conviction | fmt_num(1) }}/10</div>
+        <div class="sub">{{ thesis.expected_holding_period or '—' }}</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="thesis">Thesis</button>
+      <button class="tab" data-tab="bull">Bull Case</button>
+      <button class="tab" data-tab="bear">Bear Case</button>
+      <button class="tab" data-tab="catalysts">Catalysts</button>
+      <button class="tab" data-tab="risks">Risks</button>
+      <button class="tab" data-tab="sources">Sources</button>
+    </div>
+    <div class="tab-panel active" id="tab-thesis">
+      {% for line in (thesis.thesis_text or '').split('\n') %}
+        {% if line.strip() %}
+          {% set parts = line.split(':', 1) %}
+          {% if parts|length == 2 and parts[0] in ['FACT','CALCULATION','INFERENCE','OPINION','UNKNOWN'] %}
+            <div class="claim">
+              <span class="claim-tag claim-{{ parts[0] }}">{{ parts[0] }}</span>
+              <span class="claim-text">{{ parts[1].strip() }}</span>
+            </div>
+          {% else %}
+            <div class="claim"><span class="claim-text">{{ line }}</span></div>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="tab-panel" id="tab-bull"><div class="pre">{{ thesis.bull_case or 'No bull case recorded.' }}</div></div>
+    <div class="tab-panel" id="tab-bear"><div class="pre">{{ thesis.bear_case or 'No bear case recorded.' }}</div></div>
+    <div class="tab-panel" id="tab-catalysts">
+      {% if thesis.catalysts %}
+        <table class="data">
+          <thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Source</th></tr></thead>
+          <tbody>
+          {% for c in thesis.catalysts %}
+            <tr>
+              <td class="mono">{{ c.date or '—' }}</td>
+              <td><span class="tag">{{ c.kind }}</span></td>
+              <td style="white-space:normal">{{ c.title }}</td>
+              <td class="faint mono" style="font-size:10.5px">{{ c.source }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}<div class="faint">No catalysts identified in the available disclosures.</div>{% endif %}
+    </div>
+    <div class="tab-panel" id="tab-risks">
+      {% if thesis.risks %}
+        <ul style="margin:0;padding-left:18px;line-height:1.75">
+          {% for r in thesis.risks %}<li>{{ r }}</li>{% endfor %}
+        </ul>
+      {% else %}<div class="faint">No risks recorded.</div>{% endif %}
+      {% if thesis.invalidation_conditions %}
+        <div class="divider"></div>
+        <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin-bottom:6px">INVALIDATION CONDITIONS</div>
+        <ul style="margin:0;padding-left:18px;line-height:1.75">
+          {% for c in thesis.invalidation_conditions %}<li>{{ c }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+    <div class="tab-panel" id="tab-sources">
+      <div class="source-list">
+        {% for s in (thesis.data_sources or []) %}<span class="source-chip">{{ s }}</span>{% endfor %}
+      </div>
+      <div class="source-note">
+        Every figure in this thesis traces to one of the sources above. Claims are
+        tagged FACT (restated evidence), CALCULATION (derived), INFERENCE (concluded),
+        OPINION (judgement) or UNKNOWN (not determinable).
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">AI Research</span></div>
+  <div class="panel-body">
+    <div class="empty-state">
+      <div class="title">No thesis has been written for {{ company.ticker }}</div>
+      <div class="hint">
+        Run the agent pipeline to produce a fundamental, technical, event and bear
+        analysis, then a portfolio-manager decision.
+        <br><br><a class="btn btn-primary" href="/research?ticker={{ company.ticker }}">Run research now</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ---------- News and disclosures ---------- -->
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Disclosures</span></div>
+    <div class="panel-body flush">
+      {% if disclosures %}
+      <table class="data">
+        <tbody>
+          {% for d in disclosures %}
+          <tr>
+            <td class="mono faint">{{ d.date or '—' }}</td>
+            <td><span class="tag">{{ d.disclosure_type or 'OTHER' }}</span></td>
+            <td style="white-space:normal">
+              {% if d.url %}<a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.title[:90] }}</a>
+              {% else %}{{ d.title[:90] }}{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><div class="hint">No disclosures stored. This is an absence of data, not evidence that none exist.</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">News</span></div>
+    <div class="panel-body flush">
+      {% if news %}
+      <table class="data">
+        <tbody>
+          {% for n in news %}
+          <tr>
+            <td class="mono faint">{{ n.publication_date.date() if n.publication_date else '—' }}</td>
+            <td>
+              {% if n.sentiment_label and n.sentiment_label != 'UNKNOWN' %}
+              <span class="tag {{ 'tag-buy' if n.sentiment_label=='POSITIVE' else ('tag-sell' if n.sentiment_label=='NEGATIVE' else '') }}">
+                {{ n.sentiment_label[:3] }}
+              </span>
+              {% endif %}
+            </td>
+            <td style="white-space:normal">
+              {% if n.url %}<a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.title[:90] }}</a>
+              {% else %}{{ n.title[:90] }}{% endif %}
+              <span class="faint mono" style="font-size:10px"> {{ n.news_source or '' }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><div class="hint">No news stored. Configure feeds in <code>config/news_feeds.yaml</code>.</div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ---------- Watchlist ---------- -->
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Watchlist</span></div>
+  <div class="panel-body">
+    <form method="post" action="/watchlist/add" class="form-row" style="margin:0">
+      <input type="hidden" name="ticker" value="{{ company.ticker }}">
+      <div class="field">
+        <label>List</label>
+        <select name="list_name">
+          {% for w in watchlists %}
+          <option value="{{ w }}" {{ 'selected' if w in in_watchlists }}>{{ watchlist_labels[w] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="flex:1;min-width:220px">
+        <label>Note</label>
+        <input type="text" name="note" placeholder="Why is this on the list?">
+      </div>
+      <div class="field">
+        <label>Target</label>
+        <input type="text" name="target_price" style="width:88px">
+      </div>
+      <button class="btn" type="submit">Add / update</button>
+      {% if in_watchlists %}
+      <span class="faint" style="font-size:11.5px">
+        currently on: {{ in_watchlists | join(', ') }}
+      </span>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script id="seriesData" type="application/json">{{ series | tojson }}</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById("seriesData").textContent);
+  var levels = [];
+  {% if t and t.support_levels %}
+    {% for lvl in t.support_levels %}
+    levels.push({ value: {{ lvl }}, color: EGXCharts.THEME.up, label: "S {{ lvl | round(2) }}" });
+    {% endfor %}
+  {% endif %}
+  {% if t and t.resistance_levels %}
+    {% for lvl in t.resistance_levels %}
+    levels.push({ value: {{ lvl }}, color: EGXCharts.THEME.down, label: "R {{ lvl | round(2) }}" });
+    {% endfor %}
+  {% endif %}
+
+  function draw() {
+    EGXCharts.priceChart(document.getElementById("priceChart"), data, {
+      height: 340,
+      overlays: [
+        { values: data.sma20,  color: EGXCharts.THEME.accent },
+        { values: data.sma50,  color: EGXCharts.THEME.amber },
+        { values: data.sma200, color: "#b18cf0" }
+      ],
+      levels: levels
+    });
+    EGXCharts.indicatorChart(document.getElementById("rsiChart"), data, {
+      height: 96, fixedMin: 0, fixedMax: 100, bands: [30, 70],
+      series: [{ values: data.rsi, color: EGXCharts.THEME.accent }]
+    });
+    EGXCharts.indicatorChart(document.getElementById("macdChart"), data, {
+      height: 96,
+      series: [
+        { values: data.macd_hist, type: "histogram" },
+        { values: data.macd, color: EGXCharts.THEME.accent },
+        { values: data.macd_signal, color: EGXCharts.THEME.amber }
+      ]
+    });
+  }
+  window.redrawCharts = draw;
+  draw();
+
+  document.querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("active"); });
+      document.querySelectorAll(".tab-panel").forEach(function (x) { x.classList.remove("active"); });
+      tab.classList.add("active");
+      var panel = document.getElementById("tab-" + tab.dataset.tab);
+      if (panel) panel.classList.add("active");
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Markets — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1 class="page-title">Markets</h1>
+  <div class="page-sub">{{ total }} instruments with price data · benchmark {{ benchmark_ticker }}</div></div></div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">{{ benchmark_ticker }}</span>
+    <span class="panel-meta">{{ benchmark_series.dates | length }} sessions</span></div>
+  <div class="panel-body"><div class="chart-wrap"><canvas id="benchChart"></canvas></div></div>
+</div>
+
+<div class="grid grid-3">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Top Gainers</span><span class="panel-meta">1 session</span></div>
+    <div class="panel-body flush">
+      <table class="data"><tbody>
+      {% for m in gainers %}
+      <tr onclick="location.href='/stocks/{{ m.company.ticker }}'" style="cursor:pointer">
+        <td><span class="ticker">{{ m.company.ticker }}</span></td>
+        <td class="num">{{ m.price | fmt_num(2) }}</td>
+        <td class="num up">{{ m.day | fmt_pct(2,'—',true) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Top Losers</span><span class="panel-meta">1 session</span></div>
+    <div class="panel-body flush">
+      <table class="data"><tbody>
+      {% for m in losers %}
+      <tr onclick="location.href='/stocks/{{ m.company.ticker }}'" style="cursor:pointer">
+        <td><span class="ticker">{{ m.company.ticker }}</span></td>
+        <td class="num">{{ m.price | fmt_num(2) }}</td>
+        <td class="num down">{{ m.day | fmt_pct(2,'—',true) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Most Active</span><span class="panel-meta">by volume</span></div>
+    <div class="panel-body flush">
+      <table class="data"><tbody>
+      {% for m in most_active %}
+      <tr onclick="location.href='/stocks/{{ m.company.ticker }}'" style="cursor:pointer">
+        <td><span class="ticker">{{ m.company.ticker }}</span></td>
+        <td class="num">{{ (m.volume/1000) | fmt_num(0) }}K</td>
+        <td class="num {{ m.day | direction_class }}">{{ m.day | fmt_pct(2,'—',true) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Sector Performance</span><span class="panel-meta">5-session average</span></div>
+  <div class="panel-body"><div class="chart-wrap"><canvas id="sectorPerf"></canvas></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script id="benchData" type="application/json">{{ benchmark_series | tojson }}</script>
+<script id="sectorData" type="application/json">{{ sector_rows | tojson }}</script>
+<script>
+(function () {
+  var bench = JSON.parse(document.getElementById("benchData").textContent);
+  var sectors = JSON.parse(document.getElementById("sectorData").textContent);
+  function draw() {
+    EGXCharts.priceChart(document.getElementById("benchChart"), bench, {
+      height: 240, showVolume: false
+    });
+    EGXCharts.barChart(
+      document.getElementById("sectorPerf"),
+      sectors.map(function (s) {
+        return {
+          label: s.sector, value: s.average,
+          color: s.average >= 0 ? EGXCharts.THEME.up : EGXCharts.THEME.down
+        };
+      }),
+      { format: function (v) { return (v * 100).toFixed(2) + "%"; },
+        emptyText: "No sector data" }
+    );
+  }
+  window.redrawCharts = draw;
+  draw();
+})();
+</script>
+{% endblock %}

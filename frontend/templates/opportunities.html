@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Opportunities — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Opportunity Scanner</h1>
+    <div class="page-sub">{{ rows | length }} of {{ total }} names match the current filters</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Filters</span></div>
+  <div class="panel-body">
+    <form method="get" class="form-row" style="margin:0">
+      <div class="field"><label>Index</label>
+        <select name="index">
+          {% for i in ['all','egx30','egx70','egx100'] %}
+          <option value="{{ i }}" {{ 'selected' if filters.index==i }}>{{ i|upper }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Score &gt;</label><input type="number" step="1" name="min_score" style="width:74px" value="{{ filters.min_score or '' }}"></div>
+      <div class="field"><label>P/E &lt;</label><input type="number" step="0.5" name="max_pe" style="width:74px" value="{{ filters.max_pe or '' }}"></div>
+      <div class="field"><label>ROE &gt;</label><input type="number" step="0.01" name="min_roe" style="width:74px" value="{{ filters.min_roe or '' }}" placeholder="0.15"></div>
+      <div class="field"><label>Rev growth &gt;</label><input type="number" step="0.01" name="min_revenue_growth" style="width:88px" value="{{ filters.min_revenue_growth or '' }}" placeholder="0.10"></div>
+      <div class="field"><label>D/E &lt;</label><input type="number" step="0.1" name="max_debt_ebitda" style="width:74px" value="{{ filters.max_debt_ebitda or '' }}"></div>
+      <div class="field"><label>RSI min</label><input type="number" step="1" name="rsi_min" style="width:70px" value="{{ filters.rsi_min or '' }}"></div>
+      <div class="field"><label>RSI max</label><input type="number" step="1" name="rsi_max" style="width:70px" value="{{ filters.rsi_max or '' }}"></div>
+      <div class="field"><label>Mkt cap &gt;</label><input type="number" step="1000000" name="min_market_cap" style="width:120px" value="{{ filters.min_market_cap or '' }}"></div>
+      <div class="field"><label>Sector</label>
+        <select name="sector"><option value="">All</option>
+          {% for s in sectors %}<option value="{{ s }}" {{ 'selected' if filters.sector==s }}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Strategy</label>
+        <select name="strategy"><option value="">All</option>
+          {% for s in strategies %}<option value="{{ s }}" {{ 'selected' if filters.strategy==s }}>{{ s|replace('_',' ') }}</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn btn-primary" type="submit">Scan</button>
+      <a class="btn" href="/opportunities">Reset</a>
+    </form>
+    <div class="source-note">
+      A name lacking the metric a filter targets is excluded rather than passed —
+      "unknown" is never treated as "meets the criterion".
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Ranked Opportunities</span>
+    <span class="panel-meta">sorted by EGX ALPHA score</span>
+  </div>
+  <div class="panel-body flush">
+    {% if rows %}
+    <div class="table-scroll tall">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>#</th><th>Ticker</th><th>Name</th><th>Sector</th>
+            <th class="num">Score</th><th class="num">Fund</th><th class="num">Tech</th><th class="num">Quant</th>
+            <th class="num">Price</th><th class="num">Target</th><th class="num">Upside</th>
+            <th class="num">P/E</th><th class="num">ROE</th><th class="num">RSI</th>
+            <th>Strategy</th><th>Conf</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr onclick="location.href='/stocks/{{ r.company.ticker }}'" style="cursor:pointer">
+            <td class="faint">{{ loop.index }}</td>
+            <td><span class="ticker">{{ r.company.ticker }}</span></td>
+            <td class="dim">{{ r.company.name[:26] }}</td>
+            <td class="faint">{{ (r.company.sector or '—')[:16] }}</td>
+            <td class="num"><span class="score {{ r.score | score_class }}">{{ r.score | fmt_num(0) }}</span></td>
+            <td class="num dim">{{ r.fundamental | fmt_num(0) }}</td>
+            <td class="num dim">{{ r.technical | fmt_num(0) }}</td>
+            <td class="num dim">{{ r.quant | fmt_num(0) }}</td>
+            <td class="num">{{ r.price | fmt_num(2) }}</td>
+            <td class="num">{{ r.thesis.target_price | fmt_num(2) if r.thesis else '—' }}</td>
+            <td class="num {{ r.upside | direction_class }}">{{ r.upside | fmt_pct(1,'—',true) }}</td>
+            <td class="num">{{ r.pe | fmt_num(1) }}</td>
+            <td class="num">{{ r.roe | fmt_pct(0) }}</td>
+            <td class="num">{{ r.rsi | fmt_num(0) }}</td>
+            <td><span class="tag">{{ (r.thesis.strategy if r.thesis else '—') | replace('_',' ') }}</span></td>
+            <td class="faint" style="font-size:10.5px">{{ r.confidence or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="title">No names match</div>
+      <div class="hint">
+        Loosen the filters, or run the analysis pipeline if no scores exist yet:
+        <br><br><code>python scripts/research.py --index egx30</code>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Backtesting — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1 class="page-title">Backtesting</h1>
+  <div class="page-sub">Point-in-time simulation · look-ahead bias prevented structurally, not by convention</div></div></div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Run Backtest</span></div>
+  <div class="panel-body">
+    <form method="post" action="/backtesting/run" class="form-row" style="margin:0">
+      <div class="field"><label>Strategy</label>
+        <select name="strategy" id="strategySelect" style="min-width:170px">
+          {% for s in strategies %}<option value="{{ s }}">{{ s|replace('_',' ') }}</option>{% endfor %}
+        </select></div>
+      <div class="field"><label>Universe</label>
+        <select name="index">
+          <option value="egx30">EGX30</option><option value="egx70">EGX70</option>
+          <option value="egx100">EGX100</option><option value="all">All</option>
+        </select></div>
+      <div class="field"><label>Rebalance</label>
+        <select name="rebalance">
+          <option value="monthly">Monthly</option><option value="quarterly">Quarterly</option>
+          <option value="weekly">Weekly</option>
+        </select></div>
+      <div class="field"><label>Positions</label><input type="number" name="top_n" value="10" min="1" max="40" style="width:80px"></div>
+      <div class="field"><label>Capital</label><input type="number" name="initial_capital" value="1000000" step="100000" style="width:124px"></div>
+      <div class="field"><label>Start</label><input type="date" name="start"></div>
+      <button class="btn btn-primary" type="submit">Run</button>
+    </form>
+    <div class="source-note" id="strategyDesc"></div>
+    <div class="source-note">
+      Signals are computed on the close of day T and filled at the open of T+1.
+      Financial statements become visible only on their publication date, never
+      their period end.
+    </div>
+  </div>
+</div>
+
+{% if selected %}
+{% set m = selected.metrics %}
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">{{ selected.name }}</span>
+    <span class="panel-meta">
+      {{ selected.start_date }} → {{ selected.end_date }} ·
+      {{ selected.strategy|replace('_',' ') }}
+      {% if selected.contains_synthetic_data %}
+        · <span class="tag tag-synthetic">SYNTHETIC DATA</span>
+      {% endif %}
+    </span>
+  </div>
+  <div class="panel-body">
+    {% if selected.contains_synthetic_data %}
+    <div class="alert critical"><div><div class="alert-title">Synthetic data</div>
+      <div class="alert-msg">This backtest ran on fictional prices. The results describe a
+      simulated market and carry no information about any real strategy.</div></div></div>
+    {% endif %}
+
+    <div class="grid grid-4" style="margin-bottom:14px">
+      <div class="stat-tile"><div class="label">Total Return</div>
+        <div class="value {{ m.total_return | direction_class }}">{{ m.total_return | fmt_pct(2,'—',true) }}</div>
+        <div class="sub">benchmark {{ m.benchmark_return | fmt_pct(2,'—',true) }}</div></div>
+      <div class="stat-tile"><div class="label">CAGR</div>
+        <div class="value {{ m.cagr | direction_class }}">{{ m.cagr | fmt_pct(2,'—',true) }}</div>
+        <div class="sub">excess {{ m.excess_return | fmt_pct(2,'—',true) }}</div></div>
+      <div class="stat-tile"><div class="label">Sharpe</div>
+        <div class="value">{{ m.sharpe | fmt_num(2) }}</div>
+        <div class="sub">Sortino {{ m.sortino | fmt_num(2) }}</div></div>
+      <div class="stat-tile"><div class="label">Max Drawdown</div>
+        <div class="value down">{{ m.max_drawdown | fmt_pct(1) }}</div>
+        <div class="sub">Calmar {{ m.calmar | fmt_num(2) }}</div></div>
+    </div>
+
+    <div class="chart-wrap"><canvas id="equityChart"></canvas></div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--accent)"></span>Strategy</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--amber)"></span>Benchmark</div>
+      <div class="legend-item faint">both rebased to 100 at inception</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="grid grid-3">
+      <div>
+        <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin-bottom:6px">RETURN &amp; RISK</div>
+        <dl class="kv">
+          <dt>Volatility (ann.)</dt><dd>{{ m.volatility | fmt_pct(1) }}</dd>
+          <dt>Beta</dt><dd>{{ m.beta | fmt_num(2) }}</dd>
+          <dt>Alpha (ann.)</dt><dd class="{{ m.alpha | direction_class }}">{{ m.alpha | fmt_pct(2,'—',true) }}</dd>
+          <dt>Information ratio</dt><dd>{{ m.information_ratio | fmt_num(2) }}</dd>
+          <dt>Longest drawdown</dt><dd>{{ m.longest_drawdown_days or '—' }} days</dd>
+        </dl>
+      </div>
+      <div>
+        <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin-bottom:6px">TRADES</div>
+        <dl class="kv">
+          <dt>Total trades</dt><dd>{{ m.trades.total }}</dd>
+          <dt>Win rate</dt><dd>{{ m.trades.win_rate | fmt_pct(1) }}</dd>
+          <dt>Average winner</dt><dd class="up">{{ m.trades.average_winner | fmt_pct(2,'—',true) }}</dd>
+          <dt>Average loser</dt><dd class="down">{{ m.trades.average_loser | fmt_pct(2,'—',true) }}</dd>
+          <dt>Profit factor</dt><dd>{{ m.trades.profit_factor | fmt_num(2) }}</dd>
+          <dt>Expectancy</dt><dd class="{{ m.trades.expectancy | direction_class }}">{{ m.trades.expectancy | fmt_pct(2,'—',true) }}</dd>
+          <dt>Avg holding</dt><dd>{{ m.trades.average_holding_days | fmt_num(0) }} days</dd>
+        </dl>
+      </div>
+      <div>
+        <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin-bottom:6px">COSTS</div>
+        <dl class="kv">
+          <dt>Turnover (ann.)</dt><dd>{{ m.turnover | fmt_num(2) }}x</dd>
+          <dt>Total costs</dt><dd>{{ m.total_costs | fmt_num(0) }}</dd>
+          <dt>Initial capital</dt><dd>{{ m.initial_capital | fmt_num(0) }}</dd>
+          <dt>Final value</dt><dd>{{ m.final_value | fmt_num(0) }}</dd>
+          <dt>Period</dt><dd>{{ m.days }} days</dd>
+        </dl>
+      </div>
+    </div>
+
+    {% if m.notes %}
+    <div class="divider"></div>
+    {% for note in m.notes %}<div class="source-note">⚠ {{ note }}</div>{% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Previous Runs</span>
+    <span class="panel-meta">{{ runs|length }} stored</span></div>
+  <div class="panel-body flush">
+    {% if runs %}
+    <div class="table-scroll">
+      <table class="data">
+        <thead><tr><th>Run</th><th>Strategy</th><th>Period</th><th class="num">Return</th><th class="num">CAGR</th><th class="num">Sharpe</th><th class="num">MaxDD</th><th class="num">Trades</th><th></th></tr></thead>
+        <tbody>
+        {% for r in runs %}
+        <tr onclick="location.href='/backtesting?run_id={{ r.id }}'" style="cursor:pointer">
+          <td class="mono">#{{ r.id }}</td>
+          <td>{{ r.strategy|replace('_',' ') }}</td>
+          <td class="faint mono" style="font-size:10.5px">{{ r.start_date }} → {{ r.end_date }}</td>
+          <td class="num {{ r.metrics.get('total_return') | direction_class }}">{{ r.metrics.get('total_return') | fmt_pct(2,'—',true) }}</td>
+          <td class="num">{{ r.metrics.get('cagr') | fmt_pct(2,'—',true) }}</td>
+          <td class="num">{{ r.metrics.get('sharpe') | fmt_num(2) }}</td>
+          <td class="num down">{{ r.metrics.get('max_drawdown') | fmt_pct(1) }}</td>
+          <td class="num">{{ r.metrics.get('trades', {}).get('total', '—') }}</td>
+          <td>{% if r.contains_synthetic_data %}<span class="tag tag-synthetic">SYN</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="title">No backtests yet</div>
+      <div class="hint">Run one above, or <code>python scripts/backtest.py --strategy momentum</code></div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script id="strategyDescriptions" type="application/json">{{ strategy_descriptions | tojson }}</script>
+{% if selected %}
+<script id="equityData" type="application/json">{{ selected.equity_curve | tojson }}</script>
+{% endif %}
+<script>
+(function () {
+  var descriptions = JSON.parse(document.getElementById("strategyDescriptions").textContent);
+  var select = document.getElementById("strategySelect");
+  var target = document.getElementById("strategyDesc");
+  function updateDescription() { target.textContent = descriptions[select.value] || ""; }
+  select.addEventListener("change", updateDescription);
+  updateDescription();
+
+  var node = document.getElementById("equityData");
+  if (!node) return;
+  var curve = JSON.parse(node.textContent);
+  function draw() {
+    EGXCharts.equityChart(document.getElementById("equityChart"), {
+      dates: curve.map(function (p) { return p.date; }),
+      series: [{ label: "Strategy", values: curve.map(function (p) { return p.value; }),
+                 color: EGXCharts.THEME.accent }]
+    }, { height: 280, emptyText: "No equity curve stored" });
+  }
+  window.redrawCharts = draw;
+  draw();
+})();
+</script>
+{% endblock %}

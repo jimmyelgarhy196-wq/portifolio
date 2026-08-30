@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Model Evaluation — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1 class="page-title">Model Evaluation</h1>
+    <div class="page-sub">
+      How accurate this system's own past recommendations have been ·
+      {{ report.graded }} graded of {{ report.total_recommendations }}
+    </div></div>
+</div>
+
+{% if report.notes %}
+{% for note in report.notes %}
+<div class="alert warning"><div><div class="alert-msg">{{ note }}</div></div></div>
+{% endfor %}
+{% endif %}
+
+<div class="grid grid-4" style="margin-bottom:14px">
+  <div class="stat-tile"><div class="label">Recommendations</div>
+    <div class="value">{{ report.total_recommendations }}</div>
+    <div class="sub">{{ report.pending }} awaiting their horizon</div></div>
+  <div class="stat-tile"><div class="label">Win Rate</div>
+    <div class="value">{{ report.overall.win_rate | fmt_pct(1) }}</div>
+    <div class="sub">{{ report.overall.wins }}W / {{ report.overall.losses }}L</div></div>
+  <div class="stat-tile"><div class="label">Average Return</div>
+    <div class="value {{ report.overall.average_return | direction_class }}">{{ report.overall.average_return | fmt_pct(2,'—',true) }}</div>
+    <div class="sub">median {{ report.overall.median_return | fmt_pct(2,'—',true) }}</div></div>
+  <div class="stat-tile"><div class="label">Average Excess</div>
+    <div class="value {{ report.overall.average_excess | direction_class }}">{{ report.overall.average_excess | fmt_pct(2,'—',true) }}</div>
+    <div class="sub">beat benchmark {{ report.overall.hit_rate_vs_benchmark | fmt_pct(0) }} of the time</div></div>
+</div>
+
+{% macro group_table(title, groups, label) %}
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">{{ title }}</span></div>
+  <div class="panel-body flush">
+    {% if groups %}
+    <table class="data">
+      <thead><tr>
+        <th>{{ label }}</th><th class="num">N</th><th class="num">Graded</th>
+        <th class="num">Win rate</th><th class="num">Avg return</th>
+        <th class="num">Avg excess</th><th class="num">Best</th><th class="num">Worst</th>
+        <th class="num">Avg hold</th>
+      </tr></thead>
+      <tbody>
+      {% for g in groups %}
+      <tr>
+        <td>{{ g.name|replace('_',' ') }}</td>
+        <td class="num faint">{{ g.count }}</td>
+        <td class="num faint">{{ g.graded }}</td>
+        <td class="num">{{ g.win_rate | fmt_pct(0) }}</td>
+        <td class="num {{ g.average_return | direction_class }}">{{ g.average_return | fmt_pct(2,'—',true) }}</td>
+        <td class="num {{ g.average_excess | direction_class }}">{{ g.average_excess | fmt_pct(2,'—',true) }}</td>
+        <td class="num up">{{ g.best | fmt_pct(1,'—',true) }}</td>
+        <td class="num down">{{ g.worst | fmt_pct(1,'—',true) }}</td>
+        <td class="num faint">{{ g.average_holding_days | fmt_num(0) }}d</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="hint">No data in this breakdown yet.</div></div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{{ group_table('Performance by Strategy', report.by_strategy, 'Strategy') }}
+{{ group_table('Performance by Action', report.by_action, 'Action') }}
+{{ group_table('Performance by Conviction', report.by_conviction, 'Conviction band') }}
+{{ group_table('Performance by Score Range', report.by_score_range, 'Score range') }}
+{{ group_table('Performance by Sector', report.by_sector, 'Sector') }}
+{{ group_table('Performance by Holding Period', report.by_holding_period, 'Holding period') }}
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Method</span></div>
+  <div class="panel-body">
+    <div style="font-size:12.5px;line-height:1.7;color:var(--text-dim)">
+      Recommendations are stored append-only, so this measures what the system said
+      at the time rather than a reconstruction of what it would say now. Each is
+      graded once its evaluation horizon elapses — 180 days for fundamental long,
+      120 for special situations, 90 for bearish, 45 for technical swing — against
+      the benchmark return over the same window, so a call is credited with the
+      excess return it produced rather than with a rising market. Short and SELL
+      calls are judged on the decline they anticipated.
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}EGX ALPHA{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/terminal.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+</head>
+<body>
+
+{% if synthetic %}
+<div class="synthetic-banner">
+  ⚠ <strong>SYNTHETIC DEMONSTRATION DATA</strong> — every figure shown is fictional and
+  corresponds to no real security. Do not act on anything on this screen.
+</div>
+{% endif %}
+
+{% if universe_status and universe_status.warning %}
+<div class="notice-banner">{{ universe_status.warning }}</div>
+{% endif %}
+
+<header class="terminal-header">
+  <a href="/" class="brand" style="text-decoration:none">EGX <span>ALPHA</span></a>
+  <form action="/stocks" method="get" style="margin:0">
+    <input class="header-search" type="text" name="q" id="tickerSearch"
+           placeholder="Ticker…" autocomplete="off" list="tickerList">
+  </form>
+  <div class="header-stats">
+    {% if header and header.portfolio_value is not none %}
+    <div class="header-stat">
+      <span class="label">Portfolio</span>
+      <span class="value">{{ header.currency }} {{ header.portfolio_value | fmt_num(0) }}</span>
+    </div>
+    <div class="header-stat">
+      <span class="label">Return</span>
+      <span class="value {{ header.total_return | direction_class }}">
+        {{ header.total_return | fmt_pct(2, '—', true) }}
+      </span>
+    </div>
+    <div class="header-stat">
+      <span class="label">Cash</span>
+      <span class="value">{{ header.cash_weight | fmt_pct(1) }}</span>
+    </div>
+    {% endif %}
+    <div class="header-stat">
+      <span class="label">Mode</span>
+      <span class="value" style="color:var(--amber)">PAPER</span>
+    </div>
+    <div class="header-stat">
+      <span class="label">AI</span>
+      <span class="value" style="font-size:11.5px;color:{{ 'var(--up)' if ai_enabled else 'var(--text-dim)' }}">
+        {{ 'LLM' if ai_enabled else 'DETERMINISTIC' }}
+      </span>
+    </div>
+  </div>
+</header>
+
+<div class="terminal-body">
+  <nav class="terminal-nav">
+    <div class="nav-section">Overview</div>
+    <a class="nav-item {% if active=='dashboard' %}active{% endif %}" href="/">Dashboard</a>
+    <a class="nav-item {% if active=='markets' %}active{% endif %}" href="/markets">Markets</a>
+    <a class="nav-item {% if active=='opportunities' %}active{% endif %}" href="/opportunities">Opportunities</a>
+    <a class="nav-item {% if active=='stocks' %}active{% endif %}" href="/stocks">Stocks</a>
+
+    <div class="nav-section">Research</div>
+    <a class="nav-item {% if active=='research' %}active{% endif %}" href="/research">Research</a>
+    <a class="nav-item {% if active=='theses' %}active{% endif %}" href="/theses">Theses</a>
+    <a class="nav-item {% if active=='watchlist' %}active{% endif %}" href="/watchlist">Watchlist</a>
+
+    <div class="nav-section">Capital</div>
+    <a class="nav-item {% if active=='portfolio' %}active{% endif %}" href="/portfolio">Portfolio</a>
+    <a class="nav-item {% if active=='paper_trading' %}active{% endif %}" href="/paper-trading">Paper Trading</a>
+    <a class="nav-item {% if active=='risk' %}active{% endif %}" href="/risk">Risk</a>
+    <a class="nav-item {% if active=='backtesting' %}active{% endif %}" href="/backtesting">Backtesting</a>
+
+    <div class="nav-section">Output</div>
+    <a class="nav-item {% if active=='reports' %}active{% endif %}" href="/reports">Reports</a>
+    <a class="nav-item {% if active=='evaluation' %}active{% endif %}" href="/evaluation">Model Evaluation</a>
+    <a class="nav-item {% if active=='alerts' %}active{% endif %}" href="/alerts">
+      Alerts {% if new_alerts %}<span class="badge">{{ new_alerts }}</span>{% endif %}
+    </a>
+    <a class="nav-item {% if active=='settings' %}active{% endif %}" href="/settings">Settings</a>
+  </nav>
+
+  <main class="terminal-main">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<datalist id="tickerList"></datalist>
+<script src="/static/js/charts.js"></script>
+<script>
+// Ticker search: navigate straight to the stock page.
+(function () {
+  var input = document.getElementById("tickerSearch");
+  if (!input) return;
+  fetch("/api/universe?index=all")
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var list = document.getElementById("tickerList");
+      (data.companies || []).forEach(function (c) {
+        var option = document.createElement("option");
+        option.value = c.ticker;
+        option.label = c.name;
+        list.appendChild(option);
+      });
+    })
+    .catch(function () { /* search degrades to manual entry */ });
+
+  input.form.addEventListener("submit", function (e) {
+    var value = input.value.trim().toUpperCase();
+    if (value) { e.preventDefault(); window.location.href = "/stocks/" + encodeURIComponent(value); }
+  });
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

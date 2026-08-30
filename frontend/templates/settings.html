@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Settings — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1 class="page-title">Settings</h1>
+  <div class="page-sub">Configuration is read from environment variables and <code>config/*.yaml</code></div></div></div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Portfolio &amp; Risk Limits</span>
+      <span class="panel-meta">config/risk.yaml</span></div>
+    <div class="panel-body">
+      <dl class="kv">
+        <dt>Portfolio capital</dt><dd>{{ settings.portfolio_currency }} {{ settings.portfolio_capital | fmt_num(0) }}</dd>
+        <dt>Benchmark</dt><dd>{{ settings.benchmark_ticker }}</dd>
+        <dt>Max position weight</dt><dd>{{ risk_config.limits.max_position_weight | fmt_pct(0) }}</dd>
+        <dt>Max sector weight</dt><dd>{{ risk_config.limits.max_sector_weight | fmt_pct(0) }}</dd>
+        <dt>Min cash</dt><dd>{{ risk_config.limits.min_cash_weight | fmt_pct(0) }}</dd>
+        <dt>Max speculative</dt><dd>{{ risk_config.limits.max_speculative_weight | fmt_pct(0) }}</dd>
+        <dt>Max risk / position</dt><dd>{{ risk_config.limits.max_risk_per_position | fmt_pct(0) }}</dd>
+        <dt>Max drawdown</dt><dd>{{ risk_config.limits.max_portfolio_drawdown | fmt_pct(0) }}</dd>
+        <dt>Max positions</dt><dd>{{ risk_config.limits.max_positions }}</dd>
+        <dt>Commission</dt><dd>{{ risk_config.costs.commission_bps }} bps</dd>
+        <dt>Slippage</dt><dd>{{ risk_config.costs.slippage_bps }} bps</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Score Weights</span>
+      <span class="panel-meta">config/weights.yaml</span></div>
+    <div class="panel-body">
+      {% for block, values in weights.items() %}
+      <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin:9px 0 4px">{{ block|upper }}</div>
+      {% for key, value in values.items() %}
+      <div class="breakdown-row">
+        <div class="breakdown-label">{{ key|replace('_',' ') }}</div>
+        <div class="breakdown-bar"><div class="breakdown-fill" style="width:{{ value }}%"></div></div>
+        <div class="breakdown-value">{{ value }}%</div>
+        <div class="breakdown-weight"></div>
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Data Providers</span></div>
+    <div class="panel-body flush">
+      <table class="data">
+        <thead><tr><th>Dataset</th><th>Provider</th><th>Status</th><th>Detail</th></tr></thead>
+        <tbody>
+        {% for p in providers %}
+        <tr>
+          <td class="dim">{{ p.dataset }}</td>
+          <td><span class="ticker">{{ p.provider }}</span>
+            {% if p.synthetic %}<span class="tag tag-synthetic">SYNTHETIC</span>{% endif %}</td>
+          <td><span class="tag {{ 'tag-buy' if p.available else 'tag-sell' }}">
+            {{ 'available' if p.available else 'unavailable' }}</span></td>
+          <td class="faint" style="white-space:normal;font-size:11px">{{ p.reason or p.notes }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">System</span></div>
+    <div class="panel-body">
+      <dl class="kv">
+        <dt>Environment</dt><dd>{{ settings.env }}</dd>
+        <dt>Database</dt><dd style="font-size:11px">{{ settings.database_url.split('/')[-1] }}</dd>
+        <dt>AI model</dt><dd>{{ settings.ai_model if ai_enabled else 'deterministic' }}</dd>
+        <dt>AI enabled</dt><dd>{{ 'yes' if ai_enabled else 'no (no API key)' }}</dd>
+        <dt>Synthetic data</dt><dd class="{{ 'down' if settings.allow_synthetic_data else '' }}">{{ 'ENABLED' if settings.allow_synthetic_data else 'disabled' }}</dd>
+        <dt>Live trading</dt><dd class="up">disabled (no execution path exists)</dd>
+        <dt>Scheduler</dt><dd>{{ 'running' if scheduler.running else ('enabled, not started' if scheduler.enabled else 'disabled') }}</dd>
+        <dt>Weekly cron</dt><dd>{{ scheduler.weekly_cron }}</dd>
+        <dt>Timezone</dt><dd>{{ scheduler.timezone }}</dd>
+        <dt>Notifications</dt><dd>{{ 'enabled' if settings.notifications_enabled else 'disabled' }}</dd>
+      </dl>
+      {% if scheduler.jobs %}
+      <div class="divider"></div>
+      <div class="faint" style="font-size:10.5px;letter-spacing:.08em;margin-bottom:5px">SCHEDULED JOBS</div>
+      {% for job in scheduler.jobs %}
+      <div style="font-size:11.5px" class="dim">{{ job.id }} → {{ job.next_run or 'not scheduled' }}</div>
+      {% endfor %}
+      {% endif %}
+      <div class="divider"></div>
+      <div class="source-note">
+        Settings are edited in <code>.env</code> and <code>config/*.yaml</code>, then
+        take effect on restart. Secrets are never displayed here or stored in the
+        database.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Universe</span></div>
+  <div class="panel-body">
+    <dl class="kv" style="max-width:520px">
+      <dt>Companies</dt><dd>{{ universe_status.company_count }}</dd>
+      <dt>Verified against EGX</dt>
+      <dd class="{{ 'up' if universe_status.verified else 'down' }}">{{ 'yes' if universe_status.verified else 'NO' }}</dd>
+      <dt>Source</dt><dd style="font-size:11px">{{ universe_status.source }}</dd>
+      <dt>As of</dt><dd>{{ universe_status.as_of or '—' }}</dd>
+    </dl>
+    {% if universe_status.warning %}
+    <div class="divider"></div>
+    <div class="alert warning"><div><div class="alert-msg">{{ universe_status.warning }}</div></div></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Recent Data Ingestion</span>
+    <span class="panel-meta">audit trail</span></div>
+  <div class="panel-body flush">
+    {% if data_quality %}
+    <div class="table-scroll">
+      <table class="data">
+        <thead><tr><th>Time</th><th>Dataset</th><th>Ticker</th><th>Provider</th><th>Status</th><th class="num">In</th><th class="num">Skipped</th><th>Message</th></tr></thead>
+        <tbody>
+        {% for d in data_quality %}
+        <tr>
+          <td class="mono faint">{{ d.created_at.strftime('%m-%d %H:%M') if d.created_at else '—' }}</td>
+          <td class="dim">{{ d.dataset }}</td>
+          <td class="faint">{{ d.ticker or '—' }}</td>
+          <td class="faint">{{ d.provider or '—' }}</td>
+          <td><span class="tag {{ 'tag-buy' if d.status=='OK' else ('tag-sell' if d.status=='FAILED' else 'tag-watch') }}">{{ d.status }}</span></td>
+          <td class="num">{{ d.rows_ingested }}</td>
+          <td class="num faint">{{ d.rows_skipped }}</td>
+          <td class="faint" style="white-space:normal;font-size:11px">{{ (d.message or '')[:80] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<div class="empty-state"><div class="hint">No ingestion runs recorded yet.</div></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

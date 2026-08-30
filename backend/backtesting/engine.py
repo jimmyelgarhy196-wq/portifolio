@@ -401,7 +401,7 @@ def persist_backtest(
             {"date": d.isoformat(), "value": round(v, 2)} for d, v in result.equity_curve
         ],
         trades=[t.to_dict() for t in result.closed_trades],
-        contains_synthetic=result.contains_synthetic,
+        contains_synthetic_data=result.contains_synthetic,
     )
     session.add(run)
     session.flush()

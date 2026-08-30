@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — EGX ALPHA{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <div class="page-sub">
+      {{ portfolio.name }} · paper trading · benchmark {{ portfolio.benchmark_ticker }}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a href="/opportunities" class="btn">Scan Opportunities</a>
+  <a href="/research" class="btn btn-primary">Run Research</a>
+</div>
+
+<!-- ---------- Portfolio headline ---------- -->
+<div class="grid grid-4" style="margin-bottom:14px">
+  <div class="stat-tile">
+    <div class="label">Portfolio Value</div>
+    <div class="value">{{ portfolio.currency }} {{ state.total_value | fmt_num(0) }}</div>
+    <div class="sub">of {{ portfolio.currency }} {{ portfolio.initial_capital | fmt_num(0) }} initial</div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Total Return</div>
+    <div class="value {{ state.total_return | direction_class }}">
+      {{ state.total_return | fmt_pct(2, '—', true) }}
+    </div>
+    <div class="sub">
+      unrealised {{ state.unrealized_pnl | fmt_num(0) }} ·
+      realised {{ state.realized_pnl | fmt_num(0) }}
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Alpha vs {{ portfolio.benchmark_ticker }}</div>
+    <div class="value {{ attribution.alpha | direction_class }}">
+      {{ attribution.alpha | fmt_pct(2, '—', true) }}
+    </div>
+    <div class="sub">benchmark {{ attribution.benchmark_return | fmt_pct(2, '—', true) }}</div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Cash / Exposure</div>
+    <div class="value">{{ state.cash_weight | fmt_pct(1) }}</div>
+    <div class="sub">
+      gross {{ (state.gross_exposure / state.total_value) | fmt_pct(0) if state.total_value else '—' }} ·
+      {{ state.positions | length }} position{{ '' if state.positions|length == 1 else 's' }}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:14px">
+  <div class="stat-tile">
+    <div class="label">Daily P&amp;L</div>
+    <div class="value {{ attribution.period_returns.daily | direction_class }}" style="font-size:17px">
+      {{ attribution.period_returns.daily | fmt_pct(2, '—', true) }}
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Weekly P&amp;L</div>
+    <div class="value {{ attribution.period_returns.weekly | direction_class }}" style="font-size:17px">
+      {{ attribution.period_returns.weekly | fmt_pct(2, '—', true) }}
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Monthly P&amp;L</div>
+    <div class="value {{ attribution.period_returns.monthly | direction_class }}" style="font-size:17px">
+      {{ attribution.period_returns.monthly | fmt_pct(2, '—', true) }}
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">YTD Return</div>
+    <div class="value {{ attribution.period_returns.ytd | direction_class }}" style="font-size:17px">
+      {{ attribution.period_returns.ytd | fmt_pct(2, '—', true) }}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2-1">
+  <div>
+    <!-- ---------- Top opportunities ---------- -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Top Opportunities</span>
+        <span class="panel-meta">not currently held · ranked by EGX ALPHA score</span>
+      </div>
+      <div class="panel-body flush">
+        {% if opportunities %}
+        <div class="table-scroll">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Ticker</th><th>Name</th><th class="num">Score</th>
+                <th class="num">Price</th><th class="num">Target</th><th class="num">Upside</th>
+                <th>Strategy</th><th class="num">Conviction</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in opportunities %}
+              <tr onclick="location.href='/stocks/{{ row.ticker }}'" style="cursor:pointer">
+                <td><span class="ticker">{{ row.ticker }}</span></td>
+                <td class="dim">{{ row.name[:34] }}</td>
+                <td class="num"><span class="score {{ row.score | score_class }}">{{ row.score | fmt_num(0) }}</span></td>
+                <td class="num">{{ row.price | fmt_num(2) }}</td>
+                <td class="num">{{ row.target | fmt_num(2) }}</td>
+                <td class="num {{ row.upside | direction_class }}">{{ row.upside | fmt_pct(1, '—', true) }}</td>
+                <td><span class="tag">{{ (row.strategy or '—') | replace('_',' ') }}</span></td>
+                <td class="num">{{ row.conviction | fmt_num(1) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <div class="title">No scored opportunities yet</div>
+          <div class="hint">
+            Ingest market data and run the research pipeline to populate this table:
+            <br><br><code>python scripts/ingest.py --dataset all</code>
+            <br><code>python scripts/research.py --index egx30</code>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ---------- Portfolio ---------- -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Portfolio</span>
+        <span class="panel-meta"><a href="/portfolio">full view →</a></span>
+      </div>
+      <div class="panel-body flush">
+        {% if positions %}
+        <div class="table-scroll">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Ticker</th><th>Dir</th><th class="num">Weight</th>
+                <th class="num">Entry</th><th class="num">Current</th><th class="num">P&amp;L</th>
+                <th class="num">Score</th><th>Thesis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in positions %}
+              {% set p = row.position %}
+              <tr onclick="location.href='/stocks/{{ p.ticker }}'" style="cursor:pointer">
+                <td><span class="ticker">{{ p.ticker }}</span></td>
+                <td><span class="tag tag-{{ p.direction|lower }}">{{ p.direction }}</span></td>
+                <td class="num">{{ p.portfolio_weight | fmt_pct(1) }}</td>
+                <td class="num">{{ p.average_price | fmt_num(2) }}</td>
+                <td class="num">{{ p.current_price | fmt_num(2) }}</td>
+                <td class="num {{ row.return_pct | direction_class }}">{{ row.return_pct | fmt_pct(2, '—', true) }}</td>
+                <td class="num"><span class="score {{ row.score | score_class }}">{{ row.score | fmt_num(0) }}</span></td>
+                <td>
+                  {% if row.thesis %}
+                    <span class="tag tag-{{ 'sell' if row.thesis.status=='INVALIDATED' else 'hold' }}">{{ row.thesis.status }}</span>
+                  {% else %}<span class="faint">none</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <div class="title">No open positions</div>
+          <div class="hint">
+            All {{ portfolio.currency }} {{ portfolio.cash | fmt_num(0) }} is in cash.
+            Execute a simulated trade from <a href="/paper-trading">Paper Trading</a>.
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- ---------- Risk ---------- -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Risk</span>
+        <span class="panel-meta"><a href="/risk">detail →</a></span>
+      </div>
+      <div class="panel-body">
+        <dl class="kv">
+          <dt>Current drawdown</dt>
+          <dd class="{{ risk.current_drawdown | direction_class }}">{{ risk.current_drawdown | fmt_pct(1) }}</dd>
+          <dt>Max drawdown</dt><dd>{{ risk.max_drawdown | fmt_pct(1) }}</dd>
+          <dt>Volatility (ann.)</dt><dd>{{ risk.portfolio_volatility | fmt_pct(1) }}</dd>
+          <dt>Beta</dt><dd>{{ risk.beta | fmt_num(2) }}</dd>
+          <dt>Cash</dt><dd>{{ risk.cash_weight | fmt_pct(1) }}</dd>
+          <dt>Largest position</dt>
+          <dd>
+            {% if risk.largest_position %}
+              {{ risk.largest_position[0] }} {{ risk.largest_position[1] | fmt_pct(1) }}
+            {% else %}—{% endif %}
+          </dd>
+          <dt>Largest sector</dt>
+          <dd>
+            {% if risk.sector_weights %}
+              {% set top = (risk.sector_weights.items() | list)[0] %}
+              {{ top[0][:14] }} {{ top[1] | fmt_pct(1) }}
+            {% else %}—{% endif %}
+          </dd>
+        </dl>
+        {% if risk.warnings %}
+        <div class="divider"></div>
+        {% for w in risk.warnings[:3] %}
+        <div class="alert {{ w.severity }}">
+          <div>
+            <div class="alert-title">{{ w.title }}</div>
+            <div class="alert-msg">{{ w.message.split('\n')[0] }}</div>
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ---------- AI research summary ---------- -->
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">AI Research</span></div>
+      <div class="panel-body">
+        <dl class="kv">
+          <dt>New theses (7d)</dt><dd>{{ research_summary.new_theses }}</dd>
+          <dt>Thesis changes</dt><dd>{{ research_summary.changed_theses }}</dd>
+          <dt>Risk alerts</dt><dd class="{{ 'down' if research_summary.risk_alerts else 'dim' }}">{{ research_summary.risk_alerts }}</dd>
+          <dt>Narrative engine</dt><dd>{{ 'LLM' if ai_enabled else 'Deterministic' }}</dd>
+        </dl>
+        <div class="divider"></div>
+        <a href="/theses" class="btn btn-sm">View theses</a>
+        <a href="/evaluation" class="btn btn-sm">Track record</a>
+      </div>
+    </div>
+
+    <!-- ---------- Alerts ---------- -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Alerts</span>
+        <span class="panel-meta"><a href="/alerts">all →</a></span>
+      </div>
+      <div class="panel-body">
+        {% if alerts %}
+          {% for a in alerts %}
+          <div class="alert {{ a.severity }}">
+            <div>
+              <div class="alert-title">{{ a.title }}</div>
+              <div class="alert-msg">{{ a.message.split('\n')[0][:150] if a.message else '' }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="faint" style="font-size:12px">No open alerts.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ---------- Weekly report ---------- -->
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Weekly Report</span></div>
+      <div class="panel-body">
+        {% if latest_report %}
+          <div style="font-size:12.5px;margin-bottom:9px">
+            {{ latest_report.title }}<br>
+            <span class="faint">{{ latest_report.period_start }} → {{ latest_report.period_end }}</span>
+          </div>
+          <a href="/reports?report_id={{ latest_report.id }}" class="btn btn-primary btn-sm">View latest report</a>
+        {% else %}
+          <div class="faint" style="font-size:12px;margin-bottom:9px">
+            No report has been generated yet.
+          </div>
+          <form method="post" action="/reports/generate" style="margin:0">
+            <button class="btn btn-sm" type="submit">Generate now</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

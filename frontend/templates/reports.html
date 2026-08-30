@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Reports — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1 class="page-title">Reports</h1>
+    <div class="page-sub">{{ reports|length }} stored investment committee reports</div></div>
+  <div class="spacer"></div>
+  <form method="get" style="margin:0;display:flex;gap:7px">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search report text…" style="width:190px">
+    <button class="btn" type="submit">Search</button>
+  </form>
+  <form method="post" action="/reports/generate" style="margin:0">
+    <button class="btn btn-primary" type="submit">Generate now</button>
+  </form>
+</div>
+
+<div class="grid grid-1-2">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">History</span></div>
+    <div class="panel-body flush">
+      {% if reports %}
+      <div class="table-scroll tall">
+        <table class="data">
+          <tbody>
+          {% for r in reports %}
+          <tr onclick="location.href='/reports?report_id={{ r.id }}'" style="cursor:pointer"
+              {% if selected and selected.id == r.id %}class="active" style="cursor:pointer;background:var(--bg-hover)"{% endif %}>
+            <td>
+              <div class="mono" style="font-size:11.5px">{{ r.period_end }}</div>
+              <div class="faint" style="font-size:10.5px">
+                {{ r.report_type|replace('_',' ') }} · {{ r.generated_by }}
+                {% if r.contains_synthetic_data %}<span class="tag tag-synthetic">SYN</span>{% endif %}
+              </div>
+            </td>
+            <td>
+              {% if selected and selected.id != r.id %}
+              <a href="/reports?report_id={{ selected.id }}&compare={{ r.id }}" class="btn btn-sm"
+                 onclick="event.stopPropagation()">Compare</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><div class="hint">No reports stored.</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">{{ selected.title if selected else 'Report' }}</span>
+      {% if selected %}
+      <span class="panel-meta">
+        <a href="/reports/{{ selected.id }}/export">export markdown ↓</a>
+      </span>
+      {% endif %}
+    </div>
+    <div class="panel-body">
+      {% if selected %}
+        {% if compare_report %}
+        <div class="alert"><div><div class="alert-title">Comparing</div>
+          <div class="alert-msg">{{ selected.period_end }} against {{ compare_report.period_end }}</div></div></div>
+        <div class="grid grid-2">
+          <div><div class="faint" style="font-size:10.5px;margin-bottom:6px">{{ selected.period_end }}</div>
+            <div class="pre" style="max-height:600px;overflow:auto">{{ selected.markdown }}</div></div>
+          <div><div class="faint" style="font-size:10.5px;margin-bottom:6px">{{ compare_report.period_end }}</div>
+            <div class="pre" style="max-height:600px;overflow:auto">{{ compare_report.markdown }}</div></div>
+        </div>
+        {% else %}
+        <div class="pre">{{ selected.markdown }}</div>
+        {% endif %}
+      {% else %}
+      <div class="empty-state"><div class="title">No report selected</div>
+        <div class="hint">Generate one above, or run <code>python scripts/weekly_run.py</code>.</div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

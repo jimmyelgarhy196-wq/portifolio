@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Risk — EGX ALPHA{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1 class="page-title">Risk</h1>
+    <div class="page-sub">{{ portfolio.name }} as of {{ report.as_of }}</div></div>
+</div>
+
+{% if report.warnings %}
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Limit Breaches &amp; Warnings</span>
+    <span class="panel-meta">worst severity: {{ report.worst_severity }}</span></div>
+  <div class="panel-body">
+    {% for w in report.warnings %}
+    <div class="alert {{ w.severity }}">
+      <div><div class="alert-title">{{ w.title }}</div><div class="alert-msg">{{ w.message }}</div></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="alert"><div><div class="alert-title">No limits breached</div>
+<div class="alert-msg">Every configured risk limit is currently satisfied.</div></div></div>
+{% endif %}
+
+<div class="grid grid-4" style="margin-bottom:14px">
+  <div class="stat-tile"><div class="label">Current Drawdown</div>
+    <div class="value {{ report.current_drawdown | direction_class }}">{{ report.current_drawdown | fmt_pct(1) }}</div>
+    <div class="sub">limit {{ limits.max_portfolio_drawdown | fmt_pct(0) }}</div></div>
+  <div class="stat-tile"><div class="label">Max Drawdown</div>
+    <div class="value">{{ report.max_drawdown | fmt_pct(1) }}</div>
+    <div class="sub">since inception</div></div>
+  <div class="stat-tile"><div class="label">Volatility (ann.)</div>
+    <div class="value">{{ report.portfolio_volatility | fmt_pct(1) }}</div>
+    <div class="sub">VaR 95% {{ report.value_at_risk_95 | fmt_pct(2) }}</div></div>
+  <div class="stat-tile"><div class="label">Beta</div>
+    <div class="value">{{ report.beta | fmt_num(2) }}</div>
+    <div class="sub">vs {{ portfolio.benchmark_ticker }}</div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Sector Exposure</span>
+      <span class="panel-meta">limit {{ limits.max_sector_weight | fmt_pct(0) }}</span></div>
+    <div class="panel-body"><div class="chart-wrap"><canvas id="sectorChart"></canvas></div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Strategy Exposure</span>
+      <span class="panel-meta">speculative limit {{ limits.max_speculative_weight | fmt_pct(0) }}</span></div>
+    <div class="panel-body"><div class="chart-wrap"><canvas id="strategyChart"></canvas></div></div>
+  </div>
+</div>
+
+<div class="grid grid-3">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Concentration</span></div>
+    <div class="panel-body">
+      <dl class="kv">
+        <dt>Positions</dt><dd>{{ report.position_count }} / {{ limits.max_positions }}</dd>
+        <dt>Largest position</dt>
+        <dd>{% if report.largest_position %}{{ report.largest_position[0] }} {{ report.largest_position[1] | fmt_pct(1) }}{% else %}—{% endif %}</dd>
+        <dt>Position limit</dt><dd>{{ limits.max_position_weight | fmt_pct(0) }}</dd>
+        <dt>Herfindahl index</dt><dd>{{ report.concentration_hhi | fmt_num(3) }}</dd>
+        <dt>Cash</dt><dd>{{ report.cash_weight | fmt_pct(1) }} / min {{ limits.min_cash_weight | fmt_pct(0) }}</dd>
+        <dt>Gross exposure</dt><dd>{{ report.gross_exposure | fmt_pct(1) }}</dd>
+        <dt>Net exposure</dt><dd>{{ report.net_exposure | fmt_pct(1) }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Liquidity Risk</span></div>
+    <div class="panel-body">
+      {% if report.illiquid_positions %}
+      <table class="data">
+        <thead><tr><th>Ticker</th><th class="num">Days to exit</th></tr></thead>
+        <tbody>
+        {% for ticker, days in report.illiquid_positions %}
+        <tr><td><span class="ticker">{{ ticker }}</span></td>
+          <td class="num {{ 'down' if days > 10 else 'dim' }}">{{ days }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <div class="source-note">Days to exit at 100% of 20-day average daily traded value.</div>
+      {% else %}
+      <div class="faint" style="font-size:12px">Every position could be exited within roughly three trading days at average volume.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">Correlation Clusters</span></div>
+    <div class="panel-body">
+      {% if report.correlation_clusters %}
+        {% for cluster in report.correlation_clusters %}
+        <div style="margin-bottom:9px">
+          {% for ticker in cluster %}<span class="tag">{{ ticker }}</span> {% endfor %}
+        </div>
+        {% endfor %}
+        <div class="source-note">Correlation ≥ 0.7 over the last 120 sessions. These holdings are unlikely to diversify one another.</div>
+      {% else %}
+        <div class="faint" style="font-size:12px">No holdings are strongly correlated with one another.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if report.unavailable %}
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Measures Unavailable</span></div>
+  <div class="panel-body">
+    {% for note in report.unavailable %}
+    <div class="alert warning"><div><div class="alert-msg">{{ note }}</div></div></div>
+    {% endfor %}
+    <div class="source-note">A risk that cannot be measured is not a risk that is absent — these are reported rather than assumed benign.</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script id="riskData" type="application/json">{{ report.to_dict() | tojson }}</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById("riskData").textContent);
+  function pct(v) { return (v * 100).toFixed(1) + "%"; }
+  function draw() {
+    EGXCharts.barChart(
+      document.getElementById("sectorChart"),
+      Object.keys(data.sector_weights).map(function (k) {
+        return { label: k, value: data.sector_weights[k] };
+      }),
+      { limit: {{ limits.max_sector_weight }}, format: pct, emptyText: "No sector exposure" }
+    );
+    EGXCharts.barChart(
+      document.getElementById("strategyChart"),
+      Object.keys(data.strategy_weights).map(function (k) {
+        return { label: k.replace(/_/g, " "), value: data.strategy_weights[k] };
+      }),
+      { format: pct, emptyText: "No strategy exposure" }
+    );
+  }
+  window.redrawCharts = draw;
+  draw();
+})();
+</script>
+{% endblock %}
