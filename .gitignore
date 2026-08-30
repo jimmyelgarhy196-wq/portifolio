@@ -1,0 +1,36 @@
+# Environment / secrets
+.env
+.env.local
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+database/*.db
+
+# Data + runtime artifacts
+data/cache/*
+!data/cache/.gitkeep
+data/exports/*
+!data/exports/.gitkeep
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

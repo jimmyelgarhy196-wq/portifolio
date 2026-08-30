@@ -1,0 +1,18 @@
+# =============================================================================
+# EGX ALPHA — News feeds
+# =============================================================================
+# No feeds are enabled by default. Shipping a hardcoded list would silently
+# decide what this system reads and treat those sources as authoritative.
+#
+# Add RSS/Atom feeds you trust. Items are matched to tickers by company name or
+# explicit ticker mention; unmatched items are stored with ticker = NULL.
+#
+# Example:
+#   feeds:
+#     - name: "Publication name"
+#       url: "https://example.com/markets/rss"
+#
+# Sentiment is a transparent keyword lexicon (see backend/data/providers/rss_news.py),
+# surfaced in the UI as "lexicon sentiment". It is a heuristic, not analysis.
+# =============================================================================
+feeds: []

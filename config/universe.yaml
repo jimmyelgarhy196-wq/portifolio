@@ -1,0 +1,123 @@
+# =============================================================================
+# EGX ALPHA — Investable universe (EGX-listed equities)
+# =============================================================================
+# IMPORTANT — READ THIS BEFORE TRUSTING THIS FILE
+#
+# This file is a SEED of reference data only: ticker, company name, sector and
+# index membership. It contains NO prices, NO ratios and NO financials — those
+# are ingested from data providers and are never stored here.
+#
+# `verified: false` means this seed was compiled from general knowledge and has
+# NOT been reconciled against an official Egyptian Exchange constituent list.
+# Index membership (EGX30 / EGX70 / EGX100) is reviewed by EGX periodically and
+# changes over time; sector labels may also differ from EGX's own taxonomy.
+#
+# Before relying on this universe:
+#   1. Download the current constituent lists from https://www.egx.com.eg
+#   2. Run:  python scripts/refresh_universe.py --from-csv <file>
+#   3. Set `verified: true` and record the date below.
+#
+# The application surfaces an "UNVERIFIED UNIVERSE" notice while this is false.
+# =============================================================================
+meta:
+  verified: false
+  as_of: null
+  source: "seed:general-knowledge"
+  note: >-
+    Reference seed only. Reconcile against the official EGX constituent lists
+    before using index membership for screening or benchmarking.
+
+benchmarks:
+  # EGX30 price index. Yahoo Finance carries it as ^CCSI (formerly CASE30).
+  - ticker: EGX30
+    name: EGX 30 Index
+    provider_symbols:
+      yahoo: "^CCSI"
+    is_benchmark: true
+  - ticker: EGX70
+    name: EGX 70 EWI Index
+    provider_symbols: {}
+    is_benchmark: true
+
+# Provider symbol convention: Yahoo Finance appends ".CA" to EGX tickers.
+# This is applied automatically when `provider_symbols.yahoo` is absent.
+companies:
+  # --- Banks & financial services -----------------------------------------
+  - {ticker: COMI, name: "Commercial International Bank (CIB)", sector: Banks, in_egx30: true}
+  - {ticker: QNBA, name: "QNB Alahli", sector: Banks, in_egx30: true}
+  - {ticker: CIEB, name: "Credit Agricole Egypt", sector: Banks, in_egx30: true}
+  - {ticker: ADIB, name: "Abu Dhabi Islamic Bank - Egypt", sector: Banks, in_egx30: true}
+  - {ticker: SAUD, name: "Al Baraka Bank Egypt", sector: Banks, in_egx70: true}
+  - {ticker: HDBK, name: "Housing & Development Bank", sector: Banks, in_egx30: true}
+  - {ticker: FAIT, name: "Faisal Islamic Bank of Egypt", sector: Banks, in_egx70: true}
+  - {ticker: EXPA, name: "Export Development Bank of Egypt", sector: Banks, in_egx70: true}
+  - {ticker: HRHO, name: "EFG Holding", sector: "Financial Services", in_egx30: true}
+  - {ticker: CICH, name: "CI Capital Holding", sector: "Financial Services", in_egx70: true}
+  - {ticker: BTFH, name: "Beltone Holding", sector: "Financial Services", in_egx70: true}
+  - {ticker: EFIH, name: "e-Finance for Digital and Financial Investments", sector: Technology, in_egx30: true}
+  - {ticker: FWRY, name: "Fawry for Banking Technology", sector: Technology, in_egx30: true}
+  - {ticker: EKHO, name: "Egypt Kuwait Holding", sector: "Holding & Investment", in_egx30: true}
+  - {ticker: CCAP, name: "Qalaa Holdings", sector: "Holding & Investment", in_egx70: true}
+  - {ticker: PIOH, name: "Pioneers Holding", sector: "Holding & Investment", in_egx70: true}
+
+  # --- Real estate ---------------------------------------------------------
+  - {ticker: TMGH, name: "Talaat Moustafa Group Holding", sector: "Real Estate", in_egx30: true}
+  - {ticker: PHDC, name: "Palm Hills Developments", sector: "Real Estate", in_egx30: true}
+  - {ticker: MNHD, name: "Madinet Nasr Housing & Development", sector: "Real Estate", in_egx30: true}
+  - {ticker: OCDI, name: "SODIC (Sixth of October Development)", sector: "Real Estate", in_egx30: true}
+  - {ticker: HELI, name: "Heliopolis Housing & Development", sector: "Real Estate", in_egx30: true}
+  - {ticker: EMFD, name: "Emaar Misr for Development", sector: "Real Estate", in_egx30: true}
+  - {ticker: ORHD, name: "Orascom Development Egypt", sector: "Real Estate", in_egx70: true}
+  - {ticker: ELSH, name: "El Shams Housing & Urbanization", sector: "Real Estate", in_egx70: true}
+  - {ticker: ZMID, name: "Zahraa Maadi Investment & Development", sector: "Real Estate", in_egx70: true}
+  - {ticker: EGTS, name: "Egyptian Resorts Company", sector: "Real Estate", in_egx70: true}
+  - {ticker: UEGC, name: "Upper Egypt General Contracting", sector: Construction, in_egx70: true}
+
+  # --- Materials, chemicals & fertilizers ----------------------------------
+  - {ticker: ABUK, name: "Abu Qir Fertilizers & Chemical Industries", sector: "Chemicals & Fertilizers", in_egx30: true}
+  - {ticker: MFPC, name: "Misr Fertilizers Production (MOPCO)", sector: "Chemicals & Fertilizers", in_egx30: true}
+  - {ticker: SKPC, name: "Sidi Kerir Petrochemicals", sector: "Chemicals & Fertilizers", in_egx30: true}
+  - {ticker: KZPC, name: "Kafr El Zayat Pesticides & Chemicals", sector: "Chemicals & Fertilizers", in_egx70: true}
+  - {ticker: EGCH, name: "Egyptian Chemical Industries (KIMA)", sector: "Chemicals & Fertilizers", in_egx70: true}
+  - {ticker: ESRS, name: "Ezz Steel", sector: "Basic Resources", in_egx30: true}
+  - {ticker: IRON, name: "Egyptian Iron & Steel", sector: "Basic Resources", in_egx70: true}
+  - {ticker: EGAL, name: "Egypt Aluminum", sector: "Basic Resources", in_egx70: true}
+  - {ticker: ARCC, name: "Arabian Cement Company", sector: Cement, in_egx70: true}
+  - {ticker: SCEM, name: "Sinai Cement", sector: Cement, in_egx70: true}
+  - {ticker: MCQE, name: "Misr Cement Qena", sector: Cement, in_egx70: true}
+  - {ticker: SVCE, name: "South Valley Cement", sector: Cement, in_egx70: true}
+
+  # --- Energy --------------------------------------------------------------
+  - {ticker: AMOC, name: "Alexandria Mineral Oils Company", sector: Energy, in_egx30: true}
+  - {ticker: MOIL, name: "Maridive & Oil Services", sector: Energy, in_egx70: true}
+  - {ticker: ATQA, name: "Ataqa for Petroleum Services", sector: Energy, in_egx70: true}
+
+  # --- Industrials ---------------------------------------------------------
+  - {ticker: SWDY, name: "Elsewedy Electric", sector: Industrials, in_egx30: true}
+  - {ticker: ORAS, name: "Orascom Construction", sector: Construction, in_egx30: true}
+  - {ticker: MTIE, name: "MM Group for Industry & International Trade", sector: Industrials, in_egx30: true}
+  - {ticker: GBCO, name: "GB Corp", sector: "Automotive & Consumer", in_egx30: true}
+  - {ticker: RAYA, name: "Raya Holding for Financial Investments", sector: Industrials, in_egx70: true}
+  - {ticker: ORWE, name: "Oriental Weavers Carpet", sector: "Textiles & Durables", in_egx30: true}
+  - {ticker: ACGC, name: "Arab Cotton Ginning", sector: "Textiles & Durables", in_egx70: true}
+
+  # --- Consumer & food -----------------------------------------------------
+  - {ticker: EAST, name: "Eastern Company", sector: "Tobacco & Consumer", in_egx30: true}
+  - {ticker: JUFO, name: "Juhayna Food Industries", sector: "Food & Beverage", in_egx30: true}
+  - {ticker: EFID, name: "Edita Food Industries", sector: "Food & Beverage", in_egx30: true}
+  - {ticker: DOMT, name: "Arabian Food Industries (Domty)", sector: "Food & Beverage", in_egx70: true}
+  - {ticker: OLFI, name: "Obour Land for Food Industries", sector: "Food & Beverage", in_egx70: true}
+  - {ticker: SUGR, name: "Delta Sugar", sector: "Food & Beverage", in_egx70: true}
+  - {ticker: NCCW, name: "National Company for Maize Products", sector: "Food & Beverage", in_egx70: true}
+
+  # --- Healthcare & pharma -------------------------------------------------
+  - {ticker: ISPH, name: "Ibnsina Pharma", sector: Healthcare, in_egx30: true}
+  - {ticker: CLHO, name: "Cleopatra Hospitals Group", sector: Healthcare, in_egx30: true}
+  - {ticker: PHAR, name: "Egyptian International Pharmaceutical (EIPICO)", sector: Healthcare, in_egx70: true}
+  - {ticker: RMDA, name: "Tenth of Ramadan Pharmaceuticals (Rameda)", sector: Healthcare, in_egx70: true}
+  - {ticker: SPMD, name: "Speed Medical", sector: Healthcare, in_egx70: true}
+
+  # --- Telecom, media & education -----------------------------------------
+  - {ticker: ETEL, name: "Telecom Egypt", sector: Telecommunications, in_egx30: true}
+  - {ticker: CIRA, name: "Cairo for Investment & Real Estate Development", sector: Education, in_egx30: true}
+  - {ticker: TALM, name: "Taaleem Management Services", sector: Education, in_egx70: true}

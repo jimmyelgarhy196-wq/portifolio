@@ -1,0 +1,42 @@
+# =============================================================================
+# EGX ALPHA — Portfolio construction and risk limits
+# =============================================================================
+portfolio:
+  initial_capital: 1000000
+  currency: EGP
+  benchmark: EGX30
+
+limits:
+  max_position_weight: 0.20        # no single name above 20% of the portfolio
+  max_sector_weight: 0.30          # no sector above 30%
+  min_cash_weight: 0.05            # always hold at least 5% cash
+  max_speculative_weight: 0.15     # swing + special situations + shorts combined
+  max_risk_per_position: 0.02      # max loss to invalidation, as % of portfolio
+  max_portfolio_drawdown: 0.20     # drawdown beyond this raises a critical alert
+  max_positions: 20
+  min_position_weight: 0.01        # below this the position is not worth the ticket
+  max_single_stock_adv_participation: 0.10  # cap vs average daily volume
+
+costs:
+  commission_bps: 20               # 0.20% per side
+  slippage_bps: 15                 # 0.15% assumed adverse fill
+
+sizing:
+  # Position size = base × conviction multiplier × volatility adjustment,
+  # then clipped by risk-per-position and remaining sector headroom.
+  base_weight: 0.06
+  conviction_floor: 4.0            # below this conviction, do not size a position
+  conviction_reference: 7.0        # conviction that earns the base weight
+  conviction_max_multiplier: 1.8
+  volatility_reference_annual: 0.30
+  volatility_min_multiplier: 0.45
+  volatility_max_multiplier: 1.35
+  correlation_penalty: 0.25        # applied per correlated existing holding
+  min_risk_reward: 1.5             # below this, the trade is rejected outright
+
+strategy_classification:
+  # Which strategies count toward the speculative bucket.
+  speculative:
+    - technical_swing
+    - special_situations
+    - bearish_short

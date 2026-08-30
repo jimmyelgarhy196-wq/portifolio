@@ -1,0 +1,47 @@
+# =============================================================================
+# EGX ALPHA — Scoring weights
+# =============================================================================
+# Every weight here is editable from the Settings page at runtime.
+# Weights within each block are normalised to sum to 1.0 before use, so you can
+# express them as percentages, decimals, or arbitrary relative numbers.
+# =============================================================================
+
+# --- Master EGX ALPHA score --------------------------------------------------
+alpha:
+  fundamental: 30
+  technical:   20
+  quantitative: 15
+  catalysts:   10
+  quality:     10
+  risk:        10
+  sentiment:    5
+
+# --- Fundamental score -------------------------------------------------------
+fundamental:
+  valuation:      25
+  quality:        20
+  growth:         15
+  profitability:  15
+  balance_sheet:  10
+  cash_flow:      10
+  catalysts:       5
+
+# --- Quantitative factor model ----------------------------------------------
+quant:
+  value:      20
+  momentum:   25
+  quality:    20
+  growth:     15
+  liquidity:  10
+  volatility: 10
+
+# --- Technical score ---------------------------------------------------------
+technical:
+  trend:              25
+  momentum:           20
+  rsi_position:       10
+  macd:               10
+  volume_confirmation:10
+  relative_strength:  15
+  volatility_posture:  5
+  support_resistance:  5
