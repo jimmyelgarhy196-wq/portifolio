@@ -41,7 +41,7 @@ technical:
   momentum:           20
   rsi_position:       10
   macd:               10
-  volume_confirmation:10
+  volume_confirmation: 10
   relative_strength:  15
   volatility_posture:  5
   support_resistance:  5
