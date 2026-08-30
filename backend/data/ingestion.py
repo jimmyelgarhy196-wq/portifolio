@@ -250,7 +250,8 @@ def ingest_prices(
     end = end or date.today()
     start = end - timedelta(days=lookback_days)
     owned_chain = chain is None
-    chain = chain or market_data_chain()
+    if chain is None:
+        chain = market_data_chain()
     summary = IngestionSummary()
 
     if not chain:
@@ -361,7 +362,8 @@ def ingest_fundamentals(
     chain: ProviderChain | None = None,
 ) -> IngestionSummary:
     owned_chain = chain is None
-    chain = chain or fundamental_chain()
+    if chain is None:
+        chain = fundamental_chain()
     summary = IngestionSummary()
 
     if not chain:
@@ -407,7 +409,8 @@ def ingest_news(
     chain: ProviderChain | None = None,
 ) -> IngestionSummary:
     owned_chain = chain is None
-    chain = chain or news_chain()
+    if chain is None:
+        chain = news_chain()
     summary = IngestionSummary()
     result = IngestionResult(dataset="news")
 
@@ -494,7 +497,8 @@ def ingest_disclosures(
     chain: ProviderChain | None = None,
 ) -> IngestionSummary:
     owned_chain = chain is None
-    chain = chain or disclosure_chain()
+    if chain is None:
+        chain = disclosure_chain()
     summary = IngestionSummary()
     result = IngestionResult(dataset="disclosures")
 

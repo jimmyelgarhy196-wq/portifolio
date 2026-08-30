@@ -14,6 +14,7 @@ name with a distorted ratio would otherwise dominate the cross-section.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Sequence
 
@@ -105,13 +106,30 @@ def winsorize(values: Sequence[float], lower: float = 0.05, upper: float = 0.95)
 
     Essential on a universe this small: one distorted ratio would otherwise
     swamp the z-score for every other name.
+
+    Note on small samples: plain percentile indexing fails to clip anything when
+    the tail fraction rounds below one observation — with 10 names and a 95th
+    percentile, the cut index lands *on* the outlier. Since the EGX universe is
+    small by construction, at least one observation is clipped from each end
+    whenever there are five or more names, which is the protection the caller
+    actually needs. Below five names, no clipping is applied: with a sample that
+    small, clipping would distort more than it protects.
     """
     if not values:
         return []
     ordered = sorted(values)
     n = len(ordered)
-    lo = ordered[max(0, min(n - 1, int(n * lower)))]
-    hi = ordered[max(0, min(n - 1, int(n * upper)))]
+    if n < 5:
+        return list(values)
+
+    trim_low = max(1, int(math.ceil(n * lower)))
+    trim_high = max(1, int(math.ceil(n * (1.0 - upper))))
+    # Never trim so far that the retained range collapses.
+    trim_low = min(trim_low, (n - 1) // 2)
+    trim_high = min(trim_high, (n - 1) // 2)
+
+    lo = ordered[trim_low]
+    hi = ordered[n - 1 - trim_high]
     return [max(lo, min(hi, v)) for v in values]
 
 

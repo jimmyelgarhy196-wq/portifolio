@@ -66,13 +66,32 @@ class Strategy(abc.ABC):
         else:
             raw = {c.ticker: 1.0 / len(selected) for c in selected}
 
-        # Apply the per-position cap, then renormalise onto the invested share.
-        capped = {t: min(w, max_weight) for t, w in raw.items()}
+        # Scale onto the invested share, then apply the per-position cap and
+        # redistribute the excess to names still below it. Renormalising after
+        # capping would silently undo the cap: with a single candidate and a 20%
+        # limit, that produced a 95% position. Any weight that cannot be placed
+        # without breaching the cap stays in cash, which is the correct answer.
         invested = float(self.params.get("invested_weight", 0.95))
-        total = sum(capped.values())
-        if total <= 0:
-            return {}
-        return {t: (w / total) * invested for t, w in capped.items()}
+        weights = {t: w * invested for t, w in raw.items()}
+
+        for _ in range(10):
+            excess = 0.0
+            for ticker, weight in list(weights.items()):
+                if weight > max_weight:
+                    excess += weight - max_weight
+                    weights[ticker] = max_weight
+            if excess <= 1e-9:
+                break
+            headroom = {
+                t: max_weight - w for t, w in weights.items() if w < max_weight - 1e-9
+            }
+            available = sum(headroom.values())
+            if available <= 1e-9:
+                break   # nowhere left to put it — the remainder stays in cash
+            for ticker, room in headroom.items():
+                weights[ticker] += excess * (room / available)
+
+        return {t: w for t, w in weights.items() if w > 1e-9}
 
     def to_dict(self) -> dict[str, Any]:
         return {"name": self.name, "description": self.description, "params": self.params}
