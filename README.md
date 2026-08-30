@@ -146,6 +146,11 @@ python scripts/research.py --ticker COMI      # run the agent pipeline on one na
 python scripts/backtest.py --strategy fundamental_long --start 2020-01-01
 python scripts/weekly_run.py                  # full weekly pipeline + report
 python scripts/run_server.py                  # start the terminal
+
+python scripts/ingest.py --dry-run            # check which providers are reachable
+python scripts/backtest.py --compare          # run every strategy over identical conditions
+python scripts/refresh_universe.py --from-csv egx30.csv   # reconcile against official EGX lists
+python scripts/gen_schema.py > database/SCHEMA.md         # regenerate schema docs
 ```
 
 ---
@@ -193,14 +198,18 @@ average winner/loser, profit factor, alpha, beta, turnover — all against EGX30
 ## Testing
 
 ```bash
-pytest -q                    # full suite
-pytest tests/test_lookahead.py -v
+pytest -q                          # 338 tests
+pytest tests/test_lookahead.py -v  # the ones that matter most
 ```
 
 Covers financial calculations, technical indicators, scoring, position sizing, portfolio
-allocation, risk limits, backtest mechanics, ingestion edge cases (duplicates, gaps,
-holidays, malformed payloads) and API endpoints — with dedicated tests for look-ahead
-bias, division by zero, missing data and period misalignment.
+allocation, risk limits, backtest mechanics and metrics, ingestion edge cases
+(duplicates, gaps, holidays, malformed payloads, provider failures), agent output
+validation, report generation and every API endpoint — with dedicated suites for
+look-ahead bias, division by zero, missing data and period misalignment.
+
+Tests run against an in-memory database and make no network calls, so they are safe to
+run anywhere.
 
 ---
 
@@ -227,8 +236,11 @@ business logic.
 Stack: Python 3.11 · FastAPI · SQLAlchemy 2.0 · SQLite (PostgreSQL-ready) · pandas/numpy ·
 Jinja2 · no frontend build step, no external JS dependencies.
 
-Design rationale for every major decision: [`PROJECT_PLAN.md`](PROJECT_PLAN.md).
-Database schema: [`database/SCHEMA.md`](database/SCHEMA.md).
+| Document | Contents |
+|---|---|
+| [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Architecture decisions and the rationale for each |
+| [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | CSV formats, provider contract, how to add a source |
+| [`database/SCHEMA.md`](database/SCHEMA.md) | Every table and column, generated from the models |
 
 ---
 

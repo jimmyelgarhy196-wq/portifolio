@@ -2,7 +2,7 @@
 
 **A personal, research-focused AI investment platform for Egyptian Exchange (EGX) listed equities.**
 
-Status: Phases 1–5 implemented. Paper-trading / research only.
+Status: Phases 1–5 implemented and verified. 338 tests passing. Paper-trading / research only.
 
 ---
 
@@ -222,8 +222,16 @@ After each phase: run the app, run the tests, fix failures, verify UI and DB, do
 
 `tests/` covers financial calculations, technical indicators, score computation, position
 sizing, portfolio allocation, risk limits, backtest mechanics and metrics, ingestion
-(duplicates, gaps, holidays, bad payloads), and API endpoints — with dedicated tests for
-look-ahead bias, division by zero, missing data, and period misalignment.
+(duplicates, gaps, holidays, bad payloads, provider failures), agent output validation,
+report generation, and API endpoints — with dedicated suites for look-ahead bias,
+division by zero, missing data, and period misalignment. 338 tests, all passing, against
+an in-memory database with no network calls.
+
+The suite earned its place: it caught four real correctness bugs during development —
+winsorising that failed to clip anything on small samples, an explicitly-empty provider
+chain silently falling back to network providers, a backtest position cap undone by
+renormalisation (one candidate allocated 95% against a 20% limit), and a persistence
+call writing to a column that did not exist.
 
 ---
 
