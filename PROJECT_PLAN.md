@@ -1,21 +1,43 @@
-# EGX ALPHA — Project Plan
+# GMG Investment Intelligence — Project Plan
 
-**A personal, research-focused AI investment platform for Egyptian Exchange (EGX) listed equities.**
+**A subscription research and analytics platform for Egyptian Exchange (EGX) listed
+equities, by GMG AI Solutions.**
 
-Status: Phases 1–5 implemented and verified. 338 tests passing. Paper-trading / research only.
+Status: research engines and the subscription platform implemented and verified.
+485 tests passing. Research and information only — see [`LEGAL.md`](LEGAL.md).
+
+---
+
+## 0. How this document relates to the product
+
+The research engines described below (Phases 1–5) were built first as an internal
+analytical stack. They now sit behind **GMG Investment Intelligence**, the
+customer-facing subscription product: accounts, entitlement, a market dashboard,
+a ten-tab stock page, valuation tools, a screener, watchlists, portfolio tracking,
+alerts and an admin panel. The internal research terminal remains, mounted at
+`/terminal` for GMG staff only.
+
+See [`README.md`](README.md) for what subscribers get and
+[`DEPLOYMENT.md`](DEPLOYMENT.md) for running it.
 
 ---
 
 ## 1. Purpose and Non-Goals
 
 ### Purpose
-Build a hedge-fund-style research and portfolio-management system that surfaces EGX
-opportunities through fundamental, technical, quantitative, event, and risk analysis,
-combines them into an explainable score, expresses them as durable investment theses,
-manages a paper portfolio against those theses, and reports weekly like an investment
-committee.
+Provide EGX investors with institutional-style research: fundamental, technical,
+quantitative, event and risk analysis combined into an explainable score, expressed
+as durable investment theses, with valuation tools, screening, tracking and a weekly
+report — and with the source, age and limits of every number visible on screen.
 
 ### Explicit Non-Goals
+- **No client money, no custody, no execution, no discretionary management.**
+  GMG AI Solutions never holds a customer's money or securities, never places an
+  order, and never manages a portfolio for anyone.
+- **No personal investment advice.** Output is analysis, not a recommendation to
+  any individual.
+- **No claimed regulatory licence.** GMG is not registered or licensed by the FRA
+  or any other regulator, and says so.
 - **No live trading.** No broker integration exists. `EGX_LIVE_TRADING_ENABLED` is an
   auditable gate that defaults to `false` and is not wired to any execution path.
 - **No fabricated data.** The system never invents a price, ratio, news item, or
@@ -27,10 +49,17 @@ committee.
 
 ---
 
-## 2. Repository Inspection (starting point)
+## 2. Repository inspection
 
-The repository was **empty** — no code, no commits, no tech stack. This is a greenfield
-build, so the stack was chosen from first principles rather than inherited.
+**First build:** the repository was empty — no code, no commits, no tech stack — so the
+stack was chosen from first principles rather than inherited.
+
+**SaaS build:** the existing codebase was inspected before anything was written. The
+research engines, data-quality primitives, provenance model, scoring framework and
+point-in-time access were kept and extended rather than replaced. What was added sits
+on top: a quote layer with provenance, market aggregation, accounts, entitlement,
+billing abstraction, the customer-facing UI, and a design system. The original terminal
+UI was retained and moved behind `/terminal`.
 
 ---
 
@@ -242,3 +271,63 @@ call writing to a column that did not exist.
 - Secrets only via environment variables; `.env` is git-ignored; `.env.example` documents
   every variable.
 - Notifications are disabled unless explicitly configured.
+
+---
+
+# Part II — The subscription platform
+
+Built on top of the research engines above, without replacing them.
+
+## Architecture decisions
+
+| Decision | Rationale |
+|---|---|
+| **Quote provider chain: licensed → stored → demo** | Each provider declares `is_demo` and `delayed_minutes`, which travel with every quote into the database and out to the UI. The licensed slot **raises rather than falling back** — a silent downgrade is how generated prices end up behind a "live" label. |
+| **Index levels are never synthesised** | An official EGX index level is shown only when a licensed feed supplies it. Otherwise the figure is a constituent composite, labelled as computed by GMG, with its coverage count. |
+| **Demo contamination propagates** | If any input quote is demonstration data, every aggregate built from it is flagged demo. Fabricated inputs cannot launder into a clean-looking total. |
+| **Entitlement decided server-side, before rendering** | `require_subscriber` runs as a FastAPI dependency; a locked template is substituted for the premium one. Premium markup is never sent to the browser, so editing JavaScript unlocks nothing. |
+| **Status alone never grants access** | `Subscription.is_entitled()` checks the period end as well as the status. An `ACTIVE` row past its period is denied; a `CANCELLED` row inside its paid period is honoured. |
+| **No demo payment gateway** | A provider that flipped payments to `SUCCEEDED` would leave a database indistinguishable from a real one. With no gateway, checkout records intent, says no card was charged, and an administrator confirms — audited with their identity. |
+| **Rating derived by rules, not written by a model** | The rating, confidence, horizon and category come from fixed thresholds over the scores, so they are reproducible and cannot be hallucinated. A rating is withheld below 45% score coverage. |
+| **Valuation withholds on disagreement** | When contributing methods differ by more than 2.5×, no single fair value is published; the range and the disagreement are shown instead. |
+| **Screener excludes on unknown values** | A company whose P/E is unknown is neither cheap nor expensive. It is excluded and counted, so a user can tell "none passed" from "we could not tell". |
+| **Alerts never fire on demonstration data** | Emailing someone that their stock crossed a level, on a generated price, is the most damaging thing this system could do. |
+| **Anonymous forms carry a CSRF token** | Derived from a short-lived HttpOnly cookie, so sign-in and sign-up are protected against login CSRF, not just post-authentication forms. |
+| **The internal terminal is admin-only** | Backtesting, paper trading, risk and thesis tooling are GMG's own; they are not part of the subscription and are not exposed to subscribers. |
+
+## Modules added
+
+```
+backend/market/          status.py (EGX session), quotes.py (providers + cache),
+                         overview.py (indices, movers, breadth, search)
+backend/accounts/        security.py (Argon2id, tokens, CSRF), service.py (lifecycle)
+backend/billing/         subscriptions.py (entitlement), payments.py (provider abstraction)
+backend/notify/          email_service.py (provider abstraction), user_alerts.py
+backend/analytics/       valuation.py (DCF, multiples, blend), screener.py
+backend/research/        rating.py (rating, confidence, horizon, category)
+backend/api/             auth_deps.py, routes_auth, routes_billing, routes_gmg,
+                         routes_workspace, routes_admin, routes_public
+frontend/static/css/     gmg.css — the design system
+frontend/static/js/      gmg.js, gmg-chart.js, gmg-stock.js
+frontend/templates/gmg/  customer UI, seven legal documents, admin panel
+```
+
+## Data model added
+
+16 tables: `users`, `user_sessions`, `one_time_tokens`, `login_attempts`,
+`subscriptions`, `payments`, `user_watchlists`, `user_watchlist_items`,
+`user_portfolios`, `user_positions`, `saved_screens`, `user_alerts`,
+`audit_log`, `email_log`, `market_quotes`, `data_sources`.
+
+They share the research schema's `Base`, so one `init_database()` creates everything.
+
+## Verification
+
+- **485 automated tests**, including 133 written for this platform: quote provenance,
+  freshness labelling, aggregate contamination, access control at four privilege
+  levels, CSRF, per-user data isolation, valuation refusals, rating withholding,
+  screener exclusion and alert suppression.
+- **A 22-step browser journey** — land, price, sign up, sign in, search, chart,
+  premium tab, subscription, valuation, watchlist, portfolio, alert, screener,
+  legal — passing 44/44 on desktop (1440px) and mobile (390px), with no JavaScript
+  errors and no horizontal overflow.
