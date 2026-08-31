@@ -13,6 +13,7 @@
     <div class="card">
       <div class="card-body">
         <form method="post" action="/contact">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <div class="field">
             <label for="name">Your name</label>
             <input id="name" type="text" name="name" value="{{ form.name or '' }}">

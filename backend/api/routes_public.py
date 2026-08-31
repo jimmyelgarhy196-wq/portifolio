@@ -17,7 +17,15 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.api.auth_deps import Viewer, client_ip, get_viewer, rate_limit
+from backend.api.auth_deps import (
+    Viewer,
+    client_ip,
+    enforce_csrf,
+    form_token,
+    get_viewer,
+    rate_limit,
+    set_form_cookie,
+)
 from backend.api.deps import gmg_context, render
 from backend.api.routes_auth import flash_from
 from backend.billing.payments import payment_status
@@ -151,33 +159,46 @@ for _slug, (_title, _template) in LEGAL_PAGES.items():
 # ---------------------------------------------------------------------------
 # Contact
 # ---------------------------------------------------------------------------
+def _render_contact(request: Request, db: Session, *, status_code: int = 200, **extra: Any):
+    """Render the contact form with the CSRF token it posts back."""
+    token, fresh = form_token(request)
+    context = _ctx(request, db, **extra)
+    context["csrf_token"] = token
+    response = render(request, "gmg/contact.html", context, status_code=status_code)
+    if fresh is not None:
+        set_form_cookie(response, fresh)
+    return response
+
+
 @router.get("/contact", response_class=HTMLResponse)
 def contact_form(request: Request, db: Session = Depends(get_db)):
-    return render(request, "gmg/contact.html", _ctx(request, db, form={}))
+    return _render_contact(request, db, form={})
 
 
 @router.post("/contact", response_class=HTMLResponse)
 def contact_submit(
     request: Request,
+    csrf_token: str = Form(""),
     name: str = Form(""),
     email: str = Form(""),
     subject: str = Form(""),
     message: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    enforce_csrf(request, csrf_token)
     ip = client_ip(request)
     if not rate_limit(f"contact:{ip}", limit=4, window_seconds=900):
-        return render(request, "gmg/contact.html", _ctx(
-            request, db, form={"name": name, "email": email, "subject": subject},
+        return _render_contact(
+            request, db, status_code=429,
+            form={"name": name, "email": email, "subject": subject},
             flash={"kind": "error", "message":
-                   "Too many messages from this network. Please try again later."},
-        ), status_code=429)
+                   "Too many messages from this network. Please try again later."})
 
     if not (email.strip() and message.strip()):
-        return render(request, "gmg/contact.html", _ctx(
-            request, db, form={"name": name, "email": email, "subject": subject},
-            flash={"kind": "error", "message": "Please provide your email and a message."},
-        ), status_code=400)
+        return _render_contact(
+            request, db, status_code=400,
+            form={"name": name, "email": email, "subject": subject},
+            flash={"kind": "error", "message": "Please provide your email and a message."})
 
     settings = get_settings()
     destination = settings.admin_email or settings.email_from
@@ -190,18 +211,16 @@ def contact_submit(
     else:
         # No destination configured: say so rather than pretending it was sent.
         logger.warning("Contact form submitted but no admin email is configured.")
-        return render(request, "gmg/contact.html", _ctx(
+        return _render_contact(
             request, db, form={},
             flash={"kind": "warn", "message":
                    "This site has no contact address configured yet, so your message could "
-                   "not be delivered. Please email us directly."},
-        ))
+                   "not be delivered. Please email us directly."})
 
-    return render(request, "gmg/contact.html", _ctx(
+    return _render_contact(
         request, db, form={},
         flash={"kind": "ok", "message":
-               "Thank you — your message has been sent. We reply within two business days."},
-    ))
+               "Thank you — your message has been sent. We reply within two business days."})
 
 
 #: The brand mark, served as an SVG so browsers requesting /favicon.ico get a

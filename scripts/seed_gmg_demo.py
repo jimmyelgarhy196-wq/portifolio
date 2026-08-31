@@ -95,6 +95,12 @@ UNIVERSE: list[tuple[str, str, str, bool, float, float, float, float, float]] = 
 ]
 
 
+#: The benchmark series the weekly report measures the market against. Without
+#: it the report correctly refuses to describe a market move, which is honest
+#: but leaves the demonstration incomplete.
+BENCHMARK = ("EGX30", "EGX 30 Index", 32000.0)
+
+
 def seed(reset: bool = False) -> None:
     configure_logging()
     init_database()
@@ -106,6 +112,12 @@ def seed(reset: bool = False) -> None:
             logger.info("Cleared existing market data")
 
         existing = {c.ticker for c in db.execute(select(Company)).scalars().all()}
+        if BENCHMARK[0] not in existing:
+            db.add(Company(
+                ticker=BENCHMARK[0], name=BENCHMARK[1], exchange="EGX",
+                currency="EGP", status="INDEX",
+                description="Benchmark index series. Demonstration values only.",
+            ))
         for ticker, name, sector, egx30, shares, price, revenue, margin, growth in UNIVERSE:
             if ticker in existing:
                 continue
@@ -146,6 +158,24 @@ def seed(reset: bool = False) -> None:
                         source=SOURCE,
                     ))
                     index += 1
+                cursor += timedelta(days=1)
+
+        # --- Benchmark index series -----------------------------------------
+        if BENCHMARK[0] not in have_bars:
+            rng = random.Random(4242)
+            level = BENCHMARK[2] * 0.7
+            cursor = date.today() - timedelta(days=1100)
+            while cursor < date.today():
+                if cursor.weekday() not in (4, 5):
+                    level = max(100.0, level * (1 + 0.0005 + rng.gauss(0, 0.009)))
+                    close = round(level, 2)
+                    db.add(PriceBar(
+                        ticker=BENCHMARK[0], timestamp=cursor,
+                        open=round(close * (1 - abs(rng.gauss(0, 0.003))), 2),
+                        high=round(close * (1 + abs(rng.gauss(0, 0.004))), 2),
+                        low=round(close * (1 - abs(rng.gauss(0, 0.004))), 2),
+                        close=close, adjusted_close=close, source=SOURCE,
+                    ))
                 cursor += timedelta(days=1)
 
         # --- Financial statements: four annual periods ----------------------

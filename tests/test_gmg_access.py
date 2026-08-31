@@ -312,6 +312,82 @@ class TestDuplicateNames:
         db.close()
 
 
+class TestAnonymousFormProtection:
+    """Sign-in and sign-up are CSRF-protected too.
+
+    Without this an attacker can silently sign a victim into the attacker's
+    account and watch what they enter next — on this platform, their portfolio.
+    """
+
+    def _token(self, client, path):
+        import re
+
+        page = client.get(path)
+        match = re.search(r'name="csrf_token" value="([^"]+)"', page.text)
+        assert match, f"{path} must render a CSRF token"
+        return match.group(1)
+
+    def test_login_without_a_token_is_refused(self, app_client):
+        make_user(app_client, "csrfvictim@example.com")
+        app_client.cookies.clear()
+        response = app_client.post(
+            "/login", data={"email": "csrfvictim@example.com",
+                            "password": "Harbour-Lantern-91"},
+            follow_redirects=False)
+        assert response.status_code == 400
+
+    def test_login_with_the_token_succeeds(self, app_client):
+        make_user(app_client, "csrfok@example.com")
+        app_client.cookies.clear()
+        token = self._token(app_client, "/login")
+        response = app_client.post(
+            "/login", data={"email": "csrfok@example.com",
+                            "password": "Harbour-Lantern-91", "csrf_token": token},
+            follow_redirects=False)
+        assert response.status_code == 303
+
+    def test_a_token_from_another_visitor_does_not_work(self, app_client):
+        """The token is derived from a secret in the visitor's own cookie."""
+        make_user(app_client, "csrfmix@example.com")
+        app_client.cookies.clear()
+        stolen = self._token(app_client, "/login")
+        app_client.cookies.clear()          # a different visitor, no cookie
+        response = app_client.post(
+            "/login", data={"email": "csrfmix@example.com",
+                            "password": "Harbour-Lantern-91", "csrf_token": stolen},
+            follow_redirects=False)
+        assert response.status_code == 400
+
+    def test_signup_without_a_token_is_refused(self, app_client):
+        app_client.cookies.clear()
+        response = app_client.post(
+            "/signup", data={"email": "new@example.com", "password": "Harbour-Lantern-91",
+                             "confirm_password": "Harbour-Lantern-91", "accept_terms": "1"},
+            follow_redirects=False)
+        assert response.status_code == 400
+
+    def test_password_reset_request_without_a_token_is_refused(self, app_client):
+        app_client.cookies.clear()
+        response = app_client.post("/forgot-password", data={"email": "x@example.com"},
+                                   follow_redirects=False)
+        assert response.status_code == 400
+
+    def test_contact_form_without_a_token_is_refused(self, app_client):
+        app_client.cookies.clear()
+        response = app_client.post(
+            "/contact", data={"email": "x@example.com", "message": "hello"},
+            follow_redirects=False)
+        assert response.status_code == 400
+
+    def test_the_form_cookie_is_http_only(self, app_client):
+        app_client.cookies.clear()
+        response = app_client.get("/login")
+        header = response.headers.get("set-cookie", "")
+        assert "gmg_form" in header
+        assert "HttpOnly" in header
+        assert "SameSite=lax" in header.replace("samesite=lax", "SameSite=lax")
+
+
 class TestUserDataIsolation:
     def test_one_user_cannot_reach_another_users_watchlist(self, app_client):
         import re

@@ -16,7 +16,13 @@ from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from backend.accounts.security import csrf_token_for, sign_value, unsign_value, verify_csrf
+from backend.accounts.security import (
+    csrf_token_for,
+    generate_token,
+    sign_value,
+    unsign_value,
+    verify_csrf,
+)
 from backend.accounts.service import audit, resolve_session
 from backend.billing.subscriptions import entitlement_state, user_is_entitled
 from backend.core.config import get_settings
@@ -165,17 +171,53 @@ def _quote(value: str) -> str:
 # ---------------------------------------------------------------------------
 # CSRF
 # ---------------------------------------------------------------------------
-def check_csrf(request: Request, submitted: str | None) -> bool:
-    """Every state-changing form posts a token derived from the session secret.
+#: Anonymous visitors get their own short-lived token so the sign-in and
+#: sign-up forms are protected too. Without it, an attacker can silently sign a
+#: victim into the attacker's account (login CSRF) and watch what they then
+#: enter — which on this platform means portfolio holdings and watchlists.
+FORM_COOKIE = "gmg_form"
+FORM_TOKEN_TTL_SECONDS = 3600
 
-    Derived rather than stored, so it needs no server-side state and cannot be
-    read by another origin.
+
+def _form_secret(request: Request) -> str | None:
+    raw = request.cookies.get(FORM_COOKIE)
+    return unsign_value(raw) if raw else None
+
+
+def form_token(request: Request) -> tuple[str, str | None]:
+    """CSRF token for an anonymous form, plus the secret to persist if it is new.
+
+    Returned as a pair so the token can be rendered into the page *before* the
+    response exists, and the cookie set on that response afterwards.
     """
-    token = read_session_token(request)
-    if token is None:
-        # No session: nothing to protect yet (login and signup are rate limited).
-        return True
-    return bool(submitted) and verify_csrf(token, submitted)
+    secret = _form_secret(request)
+    fresh = None
+    if secret is None:
+        secret = generate_token()
+        fresh = secret
+    return csrf_token_for(secret), fresh
+
+
+def set_form_cookie(response: Response, secret: str) -> None:
+    settings = get_settings()
+    response.set_cookie(
+        FORM_COOKIE, sign_value(secret),
+        max_age=FORM_TOKEN_TTL_SECONDS, httponly=True,
+        secure=settings.cookie_secure, samesite="lax", path="/",
+    )
+
+
+def check_csrf(request: Request, submitted: str | None) -> bool:
+    """Every state-changing form posts a token derived from a secret we hold.
+
+    Signed in, that secret is the session token. Signed out, it is a short-lived
+    form cookie. Either way the token is *derived*, not stored server-side, so
+    it needs no state and cannot be read cross-origin.
+    """
+    secret = read_session_token(request) or _form_secret(request)
+    if secret is None:
+        return False
+    return bool(submitted) and verify_csrf(secret, submitted)
 
 
 class CsrfError(Exception):
@@ -220,8 +262,9 @@ def reset_rate_limits() -> None:
 
 __all__ = [
     "AccessDenied", "CsrfError", "RedirectException", "Viewer",
-    "api_require_subscriber", "check_csrf", "clear_session_cookie", "client_ip",
-    "enforce_csrf", "get_viewer", "rate_limit", "read_session_token",
+    "FORM_COOKIE", "api_require_subscriber", "check_csrf", "clear_session_cookie",
+    "client_ip", "enforce_csrf", "form_token", "get_viewer", "rate_limit",
+    "read_session_token", "set_form_cookie",
     "require_admin", "require_subscriber", "require_user", "reset_rate_limits",
     "set_session_cookie",
 ]

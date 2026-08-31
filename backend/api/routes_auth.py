@@ -28,7 +28,9 @@ from backend.api.auth_deps import (
     clear_session_cookie,
     client_ip,
     enforce_csrf,
+    form_token,
     get_viewer,
+    set_form_cookie,
     rate_limit,
     read_session_token,
     require_user,
@@ -95,6 +97,23 @@ def _ctx(request: Request, db: Session, **extra: Any) -> dict[str, Any]:
     return context
 
 
+def render_form(request: Request, db: Session, template: str, *,
+                status_code: int = 200, **extra: Any):
+    """Render an anonymous form, issuing the CSRF cookie it will post back.
+
+    Sign-in and sign-up are protected too: without this an attacker could sign a
+    victim into their own account and observe what the victim enters next —
+    which on this platform means portfolio holdings and watchlists.
+    """
+    token, fresh_secret = form_token(request)
+    context = _ctx(request, db, **extra)
+    context["csrf_token"] = token
+    response = render(request, template, context, status_code=status_code)
+    if fresh_secret is not None:
+        set_form_cookie(response, fresh_secret)
+    return response
+
+
 def _safe_next(value: str | None, fallback: str = "/market") -> str:
     """Only same-site paths. An absolute URL in ?next= is an open redirect."""
     if not value or not value.startswith("/") or value.startswith("//"):
@@ -110,14 +129,14 @@ def signup_form(request: Request, db: Session = Depends(get_db)):
     viewer = get_viewer(request, db)
     if viewer.is_authenticated:
         return RedirectResponse("/market", status_code=303)
-    return render(request, "gmg/signup.html", _ctx(
-        request, db, plan=current_plan().to_dict(), form={}, errors={},
-    ))
+    return render_form(request, db, "gmg/signup.html",
+                       plan=current_plan().to_dict(), form={}, errors={})
 
 
 @router.post("/signup", response_class=HTMLResponse)
 def signup_submit(
     request: Request,
+    csrf_token: str = Form(""),
     email: str = Form(""),
     password: str = Form(""),
     confirm_password: str = Form(""),
@@ -126,24 +145,25 @@ def signup_submit(
     marketing_opt_in: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    enforce_csrf(request, csrf_token)
     ip = client_ip(request)
     settings = get_settings()
     form = {"email": email, "full_name": full_name,
             "marketing_opt_in": bool(marketing_opt_in)}
 
     if not rate_limit(f"signup:{ip}", limit=6, window_seconds=600):
-        return render(request, "gmg/signup.html", _ctx(
-            request, db, plan=current_plan().to_dict(), form=form, errors={},
+        return render_form(
+            request, db, "gmg/signup.html", status_code=429,
+            plan=current_plan().to_dict(), form=form, errors={},
             flash={"kind": "error", "message":
-                   "Too many sign-up attempts from this network. Try again shortly."},
-        ), status_code=429)
+                   "Too many sign-up attempts from this network. Try again shortly."})
 
     if not accept_terms:
-        return render(request, "gmg/signup.html", _ctx(
-            request, db, plan=current_plan().to_dict(), form=form,
+        return render_form(
+            request, db, "gmg/signup.html", status_code=400,
+            plan=current_plan().to_dict(), form=form,
             errors={"accept_terms": "You must accept the terms and the risk disclaimer."},
-            flash={"kind": "error", "message": "Please correct the errors below."},
-        ), status_code=400)
+            flash={"kind": "error", "message": "Please correct the errors below."})
 
     result = accounts.register_user(
         db, email=email, password=password, confirm_password=confirm_password,
@@ -151,11 +171,10 @@ def signup_submit(
         marketing_opt_in=bool(marketing_opt_in),
     )
     if not result.ok:
-        return render(request, "gmg/signup.html", _ctx(
-            request, db, plan=current_plan().to_dict(), form=form,
-            errors=result.field_errors,
-            flash={"kind": "error", "message": result.error or "Please check the form."},
-        ), status_code=400)
+        return render_form(
+            request, db, "gmg/signup.html", status_code=400,
+            plan=current_plan().to_dict(), form=form, errors=result.field_errors,
+            flash={"kind": "error", "message": result.error or "Please check the form."})
 
     if result.user is not None:
         start_trial(db, result.user)
@@ -190,8 +209,10 @@ def verify(request: Request, token: str = "", db: Session = Depends(get_db)):
 
 @router.post("/verify/resend")
 def resend_verification(
-    request: Request, email: str = Form(""), db: Session = Depends(get_db)
+    request: Request, csrf_token: str = Form(""), email: str = Form(""),
+    db: Session = Depends(get_db),
 ):
+    enforce_csrf(request, csrf_token)
     ip = client_ip(request)
     if not rate_limit(f"resend:{ip}", limit=5, window_seconds=900):
         return RedirectResponse("/login?msg=verify_sent", status_code=303)
@@ -213,26 +234,27 @@ def login_form(request: Request, next: str = "", db: Session = Depends(get_db)):
     viewer = get_viewer(request, db)
     if viewer.is_authenticated:
         return RedirectResponse(_safe_next(next), status_code=303)
-    return render(request, "gmg/login.html", _ctx(
-        request, db, next=_safe_next(next), form={},
-    ))
+    return render_form(request, db, "gmg/login.html",
+                       next=_safe_next(next), form={})
 
 
 @router.post("/login", response_class=HTMLResponse)
 def login_submit(
     request: Request,
+    csrf_token: str = Form(""),
     email: str = Form(""),
     password: str = Form(""),
     next: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    enforce_csrf(request, csrf_token)
     ip = client_ip(request)
     if not rate_limit(f"login:{ip}", limit=12, window_seconds=300):
-        return render(request, "gmg/login.html", _ctx(
-            request, db, next=_safe_next(next), form={"email": email},
+        return render_form(
+            request, db, "gmg/login.html", status_code=429,
+            next=_safe_next(next), form={"email": email},
             flash={"kind": "error", "message":
-                   "Too many sign-in attempts from this network. Wait a few minutes."},
-        ), status_code=429)
+                   "Too many sign-in attempts from this network. Wait a few minutes."})
 
     result = accounts.authenticate(
         db, email=email, password=password, ip=ip,
@@ -247,11 +269,11 @@ def login_submit(
                        name=result.user.display_name, link=link,
                        trial_days=get_settings().trial_days)
         db.commit()
-        return render(request, "gmg/login.html", _ctx(
-            request, db, next=_safe_next(next), form={"email": email},
+        return render_form(
+            request, db, "gmg/login.html", status_code=401,
+            next=_safe_next(next), form={"email": email},
             flash={"kind": "error", "message": result.error or accounts.GENERIC_LOGIN_ERROR},
-            unverified=result.email_purpose == accounts.PURPOSE_VERIFY,
-        ), status_code=401)
+            unverified=result.email_purpose == accounts.PURPOSE_VERIFY)
 
     # authenticate() opened the session; do not open a second one.
     db.commit()
@@ -280,11 +302,13 @@ def logout(request: Request, csrf_token: str = Form(""), db: Session = Depends(g
 # ---------------------------------------------------------------------------
 @router.get("/forgot-password", response_class=HTMLResponse)
 def forgot_form(request: Request, db: Session = Depends(get_db)):
-    return render(request, "gmg/forgot_password.html", _ctx(request, db))
+    return render_form(request, db, "gmg/forgot_password.html")
 
 
 @router.post("/forgot-password")
-def forgot_submit(request: Request, email: str = Form(""), db: Session = Depends(get_db)):
+def forgot_submit(request: Request, csrf_token: str = Form(""),
+                  email: str = Form(""), db: Session = Depends(get_db)):
+    enforce_csrf(request, csrf_token)
     ip = client_ip(request)
     if rate_limit(f"forgot:{ip}", limit=6, window_seconds=900):
         result = accounts.request_password_reset(db, email=email, ip=ip)
@@ -300,17 +324,19 @@ def forgot_submit(request: Request, email: str = Form(""), db: Session = Depends
 
 @router.get("/reset-password", response_class=HTMLResponse)
 def reset_form(request: Request, token: str = "", db: Session = Depends(get_db)):
-    return render(request, "gmg/reset_password.html", _ctx(request, db, token=token))
+    return render_form(request, db, "gmg/reset_password.html", token=token)
 
 
 @router.post("/reset-password", response_class=HTMLResponse)
 def reset_submit(
     request: Request,
+    csrf_token: str = Form(""),
     token: str = Form(""),
     password: str = Form(""),
     confirm_password: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    enforce_csrf(request, csrf_token)
     if not rate_limit(f"reset:{client_ip(request)}", limit=8, window_seconds=900):
         return RedirectResponse("/login?msg=reset_failed", status_code=303)
     result = accounts.reset_password(
@@ -320,10 +346,10 @@ def reset_submit(
     db.commit()
     if not result.ok:
         if result.field_errors:
-            return render(request, "gmg/reset_password.html", _ctx(
-                request, db, token=token, errors=result.field_errors,
+            return render_form(request, db, "gmg/reset_password.html",
+                   token=token, errors=result.field_errors,
                 flash={"kind": "error", "message": result.error or "Please check the form."},
-            ), status_code=400)
+               status_code=400)
         return RedirectResponse("/login?msg=reset_failed", status_code=303)
     return RedirectResponse("/login?msg=reset_done", status_code=303)
 

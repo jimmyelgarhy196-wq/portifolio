@@ -8,6 +8,7 @@
 </p>
 
 <form method="post" action="/signup" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="field">
     <label for="full_name">Full name</label>
     <input id="full_name" type="text" name="full_name" value="{{ form.full_name or '' }}"

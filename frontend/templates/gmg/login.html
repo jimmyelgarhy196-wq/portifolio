@@ -6,6 +6,7 @@
 
 <form method="post" action="/login">
   <input type="hidden" name="next" value="{{ next or '/market' }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="field">
     <label for="email">Email address</label>
     <input id="email" type="email" name="email" value="{{ form.email or '' }}"
@@ -20,6 +21,7 @@
 
 {% if unverified %}
 <form method="post" action="/verify/resend" class="mt-16">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="email" value="{{ form.email or '' }}">
   <button class="btn btn-block btn-sm" type="submit">Send me a new verification link</button>
 </form>
