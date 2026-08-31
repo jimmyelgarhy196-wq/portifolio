@@ -20,6 +20,7 @@ os.environ.pop("ANTHROPIC_API_KEY", None)
 from backend.core.config import get_settings, reload_configs  # noqa: E402
 from backend.core.database import get_engine, reset_engine  # noqa: E402
 from backend.data import models  # noqa: E402
+from backend.data import saas_models  # noqa: E402,F401  (registers SaaS tables)
 
 
 @pytest.fixture(scope="function")
