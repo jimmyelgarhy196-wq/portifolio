@@ -101,6 +101,11 @@ class Metric:
         if self.unit == "times":
             return f"{self.value:.2f}x"
         if self.unit == "currency":
+            # EGP figures run to billions; compact notation stays readable.
+            magnitude = abs(self.value)
+            for cutoff, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
+                if magnitude >= cutoff:
+                    return f"{self.value / cutoff:,.2f}{suffix}"
             return f"{self.value:,.0f}"
         return f"{self.value:.2f}"
 

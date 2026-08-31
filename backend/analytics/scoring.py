@@ -1,6 +1,6 @@
 """Scoring framework — the explainability backbone.
 
-Every score in EGX ALPHA is built here, and every score carries its own
+Every score in GMG is built here, and every score carries its own
 derivation: which inputs fed each component, how the component was normalised,
 what weight it carried, and how much it contributed to the total.
 
@@ -107,7 +107,7 @@ class ScoreResult:
         """Human-readable derivation, used in reports and theses."""
         if not self.available:
             return f"{self.name}: UNAVAILABLE — {self.note or 'no inputs could be computed.'}"
-        label = "EGX ALPHA" if self.name == "egx_alpha" else self.name.replace("_", " ").title()
+        label = "GMG" if self.name == "egx_alpha" else self.name.replace("_", " ").title()
         lines = [f"{label} Score: {self.value:.0f}/100"]
         for row in self.breakdown():
             if row["available"]:

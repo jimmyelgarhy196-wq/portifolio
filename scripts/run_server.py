@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start the EGX ALPHA terminal."""
+"""Start the GMG terminal."""
 from __future__ import annotations
 
 import argparse
@@ -21,7 +21,7 @@ def main() -> int:
 
     import uvicorn
 
-    print(f"\n  EGX ALPHA  ·  http://{args.host}:{args.port}")
+    print(f"\n  GMG  ·  http://{args.host}:{args.port}")
     print(f"  API docs   ·  http://{args.host}:{args.port}/api/docs")
     if settings.allow_synthetic_data:
         print("\n  ⚠  SYNTHETIC DATA ENABLED — displayed figures may be fictional.")

@@ -19,7 +19,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
-from backend.analytics.screener import FILTERS, FILTER_BY_KEY, run_screen
+from backend.analytics.service import build_universe_metrics
+from backend.analytics.screener import (
+    FILTER_BY_KEY,
+    FILTER_GROUPS,
+    FILTERS,
+    run_screen,
+)
 from backend.api.auth_deps import (
     Viewer,
     client_ip,
@@ -100,16 +106,21 @@ def screener(
         indices = request.query_params.getlist("index")
 
     companies = active_universe(db)
-    quotes = get_quotes(db, [c.ticker for c in companies]) if companies else {}
+    tickers = [c.ticker for c in companies]
+    quotes = get_quotes(db, tickers) if companies else {}
     db.commit()
+    # Fundamental and quant values, so the screener can filter on more than the
+    # quote cache. Without this every fundamental column reads N/A.
+    metrics = build_universe_metrics(db, tickers) if tickers else {}
     result = run_screen(
         db, companies=companies, quotes=quotes, scores=_latest_scores(db),
-        criteria=criteria, sectors=sectors, indices=indices,
+        metrics=metrics, criteria=criteria, sectors=sectors, indices=indices,
         sort_key=sort, descending=True, limit=150,
     )
 
     return render(request, "gmg/screener.html", _ctx(
         request, db, active="screener", result=result, filters=FILTERS,
+        filter_groups=FILTER_GROUPS, filter_by_key=FILTER_BY_KEY,
         criteria=criteria, sectors=sectors, indices=indices, sort=sort,
         saved=saved, loaded=loaded,
         all_sectors=sorted({c.sector for c in companies if c.sector}),

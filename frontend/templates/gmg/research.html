@@ -78,7 +78,7 @@
           <td><span class="badge {{ {'BUY': 'badge-up', 'SELL': 'badge-down', 'HOLD': 'badge-muted'}.get(r.action, 'badge-info') }}">{{ r.action }}</span></td>
           <td class="num">{{ r.alpha_score | fmt_num(0, 'N/A') }}</td>
           <td class="hide-sm text-xs">{{ r.expected_holding_period or '—' }}</td>
-          <td class="hide-sm text-xs faint">{{ (r.rationale or '')[:140] }}</td>
+          <td class="hide-sm text-xs faint">{{ (r.rationale or '') | truncate(150, false, '…') }}</td>
         </tr>
         {% endfor %}
         </tbody>

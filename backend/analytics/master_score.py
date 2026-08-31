@@ -1,4 +1,4 @@
-"""The EGX ALPHA master score.
+"""The GMG master score.
 
 Combines the fundamental, technical and quantitative engines with catalyst,
 quality, risk and sentiment components into a single 0-100 number.
@@ -122,8 +122,8 @@ class AlphaScore:
         }
 
     def explain(self) -> str:
-        lines = [f"EGX ALPHA SCORE: {self.value:.0f}/100" if self.value is not None
-                 else "EGX ALPHA SCORE: UNAVAILABLE"]
+        lines = [f"GMG SCORE: {self.value:.0f}/100" if self.value is not None
+                 else "GMG SCORE: UNAVAILABLE"]
         lines.append("")
         lines.append(self.score.explain())
         for label, sub in (
@@ -289,7 +289,7 @@ def compute_alpha_score(
     fundamentals_retrieved_at: datetime | None = None,
     prices_retrieved_at: datetime | None = None,
 ) -> AlphaScore:
-    """Compute the EGX ALPHA master score with a full audit trail."""
+    """Compute the GMG master score with a full audit trail."""
     as_of = as_of or date.today()
     cfg = weights or load_yaml_config("weights").get("alpha") or {}
 

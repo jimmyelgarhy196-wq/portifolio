@@ -21,10 +21,10 @@
         <td class="faint nowrap text-xs">{{ e.created_at | fmt_dt }}</td>
         <td class="text-xs">{{ e.to_email }}</td>
         <td class="text-xs">{{ e.template }}</td>
-        <td class="text-xs faint">{{ e.subject[:70] }}</td>
+        <td class="text-xs faint">{{ e.subject | truncate(80, false, '…') }}</td>
         <td class="text-xs">{{ e.provider }}</td>
         <td><span class="badge {{ {'SENT': 'badge-live', 'FAILED': 'badge-down', 'SKIPPED': 'badge-muted'}.get(e.status, 'badge-muted') }}">{{ e.status }}</span>
-          {% if e.error %}<div class="text-xs down">{{ e.error[:70] }}</div>{% endif %}</td>
+          {% if e.error %}<div class="text-xs down">{{ e.error | truncate(80, false, '…') }}</div>{% endif %}</td>
       </tr>
       {% endfor %}
       </tbody>

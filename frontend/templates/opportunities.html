@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Opportunities — EGX ALPHA{% endblock %}
+{% block title %}Opportunities — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -38,7 +38,7 @@
         </select>
       </div>
       <button class="btn btn-primary" type="submit">Scan</button>
-      <a class="btn" href="/opportunities">Reset</a>
+      <a class="btn" href="/terminal/opportunities">Reset</a>
     </form>
     <div class="source-note">
       A name lacking the metric a filter targets is excluded rather than passed —
@@ -50,7 +50,7 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Ranked Opportunities</span>
-    <span class="panel-meta">sorted by EGX ALPHA score</span>
+    <span class="panel-meta">sorted by GMG Terminal score</span>
   </div>
   <div class="panel-body flush">
     {% if rows %}

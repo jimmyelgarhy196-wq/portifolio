@@ -30,7 +30,7 @@ from backend.data.models import (
 
 logger = get_logger(__name__)
 
-DEFAULT_PORTFOLIO_NAME = "EGX ALPHA Paper Portfolio"
+DEFAULT_PORTFOLIO_NAME = "GMG Research Portfolio"
 
 
 class TradeRejected(Exception):

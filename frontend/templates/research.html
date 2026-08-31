@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Research — EGX ALPHA{% endblock %}
+{% block title %}Research — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><h1 class="page-title">AI Research</h1>
@@ -48,12 +48,12 @@
         <div class="value" style="font-size:24px"><span class="tag tag-{{ d.action|lower }}">{{ d.action }}</span></div></div>
       <div class="stat-tile"><div class="label">Conviction</div>
         <div class="value">{{ d.conviction | fmt_num(1) }}<span style="font-size:14px;color:var(--text-faint)">/10</span></div></div>
-      <div class="stat-tile"><div class="label">EGX ALPHA Score</div>
+      <div class="stat-tile"><div class="label">GMG Terminal Score</div>
         <div class="value">{{ result.analysis.alpha.value | fmt_num(0) }}</div>
         <div class="sub">confidence {{ result.analysis.alpha.score.confidence.value }}</div></div>
       <div class="stat-tile"><div class="label">Thesis</div>
         <div class="value" style="font-size:16px">
-          {% if result.bundle %}<a href="/theses/{{ result.bundle.thesis.thesis_id }}">{{ result.bundle.thesis.reference }}</a>{% else %}—{% endif %}
+          {% if result.bundle %}<a href="/terminal/theses/{{ result.bundle.thesis.thesis_id }}">{{ result.bundle.thesis.reference }}</a>{% else %}—{% endif %}
         </div>
         <div class="sub">{{ 'new' if result.bundle and result.bundle.is_new else 'updated' }}</div></div>
     </div>

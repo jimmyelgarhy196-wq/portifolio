@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Backtesting — EGX ALPHA{% endblock %}
+{% block title %}Backtesting — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head"><div><h1 class="page-title">Backtesting</h1>
   <div class="page-sub">Point-in-time simulation · look-ahead bias prevented structurally, not by convention</div></div></div>
@@ -7,7 +7,7 @@
 <div class="panel">
   <div class="panel-header"><span class="panel-title">Run Backtest</span></div>
   <div class="panel-body">
-    <form method="post" action="/backtesting/run" class="form-row" style="margin:0">
+    <form method="post" action="/terminal/backtesting/run" class="form-row" style="margin:0">
       <div class="field"><label>Strategy</label>
         <select name="strategy" id="strategySelect" style="min-width:170px">
           {% for s in strategies %}<option value="{{ s }}">{{ s|replace('_',' ') }}</option>{% endfor %}

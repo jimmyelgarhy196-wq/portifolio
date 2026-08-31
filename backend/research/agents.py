@@ -872,7 +872,7 @@ class PortfolioManager(BaseAgent):
 
         out.append(Statement(
             Claim.CALCULATION,
-            f"DECISION: {action}. The EGX ALPHA score is "
+            f"DECISION: {action}. The GMG score is "
             f"{_fmt(pack, 'alpha_score') or 'UNAVAILABLE'}"
             + (f", computed on {coverage:.0%} of component weight" if coverage else "")
             + f", and the position is {'currently held' if held else 'not currently held'}.",

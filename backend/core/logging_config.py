@@ -1,4 +1,4 @@
-"""Structured logging for EGX ALPHA.
+"""Structured logging for GMG Investment Intelligence.
 
 Two formats are supported: human-readable ``text`` for local work and ``json``
 for production log shipping. Domain events (data updates, provider failures,

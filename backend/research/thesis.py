@@ -41,7 +41,7 @@ HOLDING_PERIODS = {
 
 #: Fields whose change between versions is worth reporting in the weekly diff.
 TRACKED_FIELDS: tuple[tuple[str, str, str], ...] = (
-    ("alpha_score", "EGX ALPHA score", "score"),
+    ("alpha_score", "GMG score", "score"),
     ("fundamental_score", "Fundamental score", "score"),
     ("technical_score", "Technical score", "score"),
     ("quant_score", "Quant score", "score"),
@@ -298,7 +298,7 @@ def upsert_thesis(
         thesis = ResearchThesis(reference=next_reference(session), version=1, **payload)
         session.add(thesis)
         session.flush()
-        change_summary = f"Thesis opened at an EGX ALPHA score of {alpha.value:.0f}." if alpha.value is not None else "Thesis opened."
+        change_summary = f"Thesis opened at an GMG score of {alpha.value:.0f}." if alpha.value is not None else "Thesis opened."
     else:
         thesis = existing
         before = {field: getattr(thesis, field) for field, _l, _k in TRACKED_FIELDS}
@@ -469,7 +469,7 @@ def render_thesis(thesis: ResearchThesis) -> str:
         f"Quant Score:       {num(thesis.quant_score, '.0f')}",
         f"Catalyst Score:    {num(thesis.catalyst_score, '.0f')}",
         f"Risk Score:        {num(thesis.risk_score, '.0f')}",
-        f"EGX ALPHA SCORE:   {num(thesis.alpha_score, '.0f')}",
+        f"GMG SCORE:   {num(thesis.alpha_score, '.0f')}",
         "",
         "INVESTMENT THESIS",
         "",

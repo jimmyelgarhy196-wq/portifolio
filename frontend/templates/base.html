@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}EGX ALPHA{% endblock %}</title>
+  <title>{% block title %}GMG Terminal{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/terminal.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
 </head>
@@ -21,8 +21,8 @@
 {% endif %}
 
 <header class="terminal-header">
-  <a href="/" class="brand" style="text-decoration:none">EGX <span>ALPHA</span></a>
-  <form action="/stocks" method="get" style="margin:0">
+  <a href="/terminal" class="brand" style="text-decoration:none">GMG <span>Terminal</span></a>
+  <form action="/terminal/stocks" method="get" style="margin:0">
     <input class="header-search" type="text" name="q" id="tickerSearch"
            placeholder="Ticker…" autocomplete="off" list="tickerList">
   </form>
@@ -59,29 +59,29 @@
 <div class="terminal-body">
   <nav class="terminal-nav">
     <div class="nav-section">Overview</div>
-    <a class="nav-item {% if active=='dashboard' %}active{% endif %}" href="/">Dashboard</a>
-    <a class="nav-item {% if active=='markets' %}active{% endif %}" href="/markets">Markets</a>
-    <a class="nav-item {% if active=='opportunities' %}active{% endif %}" href="/opportunities">Opportunities</a>
-    <a class="nav-item {% if active=='stocks' %}active{% endif %}" href="/stocks">Stocks</a>
+    <a class="nav-item {% if active=='dashboard' %}active{% endif %}" href="/terminal">Dashboard</a>
+    <a class="nav-item {% if active=='markets' %}active{% endif %}" href="/terminal/markets">Markets</a>
+    <a class="nav-item {% if active=='opportunities' %}active{% endif %}" href="/terminal/opportunities">Opportunities</a>
+    <a class="nav-item {% if active=='stocks' %}active{% endif %}" href="/terminal/stocks">Stocks</a>
 
     <div class="nav-section">Research</div>
-    <a class="nav-item {% if active=='research' %}active{% endif %}" href="/research">Research</a>
-    <a class="nav-item {% if active=='theses' %}active{% endif %}" href="/theses">Theses</a>
-    <a class="nav-item {% if active=='watchlist' %}active{% endif %}" href="/watchlist">Watchlist</a>
+    <a class="nav-item {% if active=='research' %}active{% endif %}" href="/terminal/research">Research</a>
+    <a class="nav-item {% if active=='theses' %}active{% endif %}" href="/terminal/theses">Theses</a>
+    <a class="nav-item {% if active=='watchlist' %}active{% endif %}" href="/terminal/watchlist">Watchlist</a>
 
     <div class="nav-section">Capital</div>
-    <a class="nav-item {% if active=='portfolio' %}active{% endif %}" href="/portfolio">Portfolio</a>
-    <a class="nav-item {% if active=='paper_trading' %}active{% endif %}" href="/paper-trading">Paper Trading</a>
-    <a class="nav-item {% if active=='risk' %}active{% endif %}" href="/risk">Risk</a>
-    <a class="nav-item {% if active=='backtesting' %}active{% endif %}" href="/backtesting">Backtesting</a>
+    <a class="nav-item {% if active=='portfolio' %}active{% endif %}" href="/terminal/portfolio">Portfolio</a>
+    <a class="nav-item {% if active=='paper_trading' %}active{% endif %}" href="/terminal/paper-trading">Paper Trading</a>
+    <a class="nav-item {% if active=='risk' %}active{% endif %}" href="/terminal/risk">Risk</a>
+    <a class="nav-item {% if active=='backtesting' %}active{% endif %}" href="/terminal/backtesting">Backtesting</a>
 
     <div class="nav-section">Output</div>
-    <a class="nav-item {% if active=='reports' %}active{% endif %}" href="/reports">Reports</a>
-    <a class="nav-item {% if active=='evaluation' %}active{% endif %}" href="/evaluation">Model Evaluation</a>
-    <a class="nav-item {% if active=='alerts' %}active{% endif %}" href="/alerts">
+    <a class="nav-item {% if active=='reports' %}active{% endif %}" href="/terminal/reports">Reports</a>
+    <a class="nav-item {% if active=='evaluation' %}active{% endif %}" href="/terminal/evaluation">Model Evaluation</a>
+    <a class="nav-item {% if active=='alerts' %}active{% endif %}" href="/terminal/alerts">
       Alerts {% if new_alerts %}<span class="badge">{{ new_alerts }}</span>{% endif %}
     </a>
-    <a class="nav-item {% if active=='settings' %}active{% endif %}" href="/settings">Settings</a>
+    <a class="nav-item {% if active=='settings' %}active{% endif %}" href="/terminal/settings">Settings</a>
   </nav>
 
   <main class="terminal-main">

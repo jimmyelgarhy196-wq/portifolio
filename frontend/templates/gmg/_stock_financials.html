@@ -18,7 +18,7 @@
         <tr>
           <td>{{ label }}</td>
           {% for p in periods %}
-            {% set v = p.values.get(field) %}
+            {% set v = p.lines.get(field) %}
             <td class="num {{ '' if v is not none else 'na' }}">
               {{ v | fmt_compact if v is not none else 'N/A' }}
             </td>

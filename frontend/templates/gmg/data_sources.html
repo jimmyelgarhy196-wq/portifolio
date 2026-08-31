@@ -92,7 +92,7 @@
           <td>{{ r.name }}{% if r.is_demo %} <span class="badge badge-demo">Demo</span>{% endif %}</td>
           <td class="text-xs faint">{{ r.kind }}</td>
           <td class="text-xs">{{ r.last_success_at | fmt_dt('%d %b %Y, %H:%M', 'never') }}</td>
-          <td class="text-xs faint">{{ (r.last_error or '—')[:80] }}</td>
+          <td class="text-xs faint">{{ (r.last_error or '—') | truncate(90, false, '…') }}</td>
         </tr>
         {% endfor %}
         </tbody>

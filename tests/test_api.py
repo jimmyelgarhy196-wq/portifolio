@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -63,6 +63,40 @@ def client():
     engine.dispose()
 
 
+@pytest.fixture
+def admin_client(client):
+    """A client signed in as an administrator.
+
+    The internal research terminal at /terminal is admin-only, so reaching it
+    requires a real session rather than a bypass — which is also the point: the
+    gate is exercised by every test that uses this fixture.
+    """
+    from backend.accounts.security import sign_value
+    from backend.accounts.service import open_session, register_user
+    from backend.core.config import get_settings
+    from backend.core.database import get_db as _get_db
+
+    override = client.app.dependency_overrides[_get_db]
+    generator = override()
+    db = next(generator)
+    try:
+        result = register_user(
+            db, email="admin@example.com", password="Kestrel-Harbour-77",
+            confirm_password="Kestrel-Harbour-77",
+        )
+        assert result.ok and result.user is not None, result.error
+        user = result.user
+        user.email_verified_at = datetime.now(timezone.utc)
+        user.role = "ADMIN"
+        token = open_session(db, user)
+        db.commit()
+    finally:
+        generator.close()
+
+    client.cookies.set(get_settings().session_cookie, sign_value(token))
+    return client
+
+
 class TestHealth:
     def test_health_declares_paper_only(self, client):
         payload = client.get("/api/health").json()
@@ -76,23 +110,60 @@ class TestHealth:
         assert payload["status"]["warning"]
 
 
-class TestPages:
+class TestInternalTerminal:
+    """The legacy research terminal, now mounted at /terminal for GMG staff."""
+
     @pytest.mark.parametrize("path", [
-        "/", "/markets", "/opportunities", "/stocks", "/stocks/TEST",
-        "/theses", "/watchlist", "/portfolio", "/paper-trading", "/risk",
-        "/backtesting", "/reports", "/evaluation", "/alerts", "/settings",
-        "/research",
+        "/terminal", "/terminal/markets", "/terminal/opportunities",
+        "/terminal/stocks", "/terminal/stocks/TEST", "/terminal/theses",
+        "/terminal/watchlist", "/terminal/portfolio", "/terminal/paper-trading",
+        "/terminal/risk", "/terminal/backtesting", "/terminal/reports",
+        "/terminal/evaluation", "/terminal/alerts", "/terminal/settings",
+        "/terminal/research",
     ])
-    def test_page_renders(self, client, path):
-        response = client.get(path)
+    def test_page_renders(self, admin_client, path):
+        response = admin_client.get(path)
         assert response.status_code == 200, f"{path} returned {response.status_code}"
-        assert "EGX" in response.text
+        assert "GMG" in response.text
 
-    def test_unknown_ticker_is_404(self, client):
-        assert client.get("/stocks/NOSUCH").status_code == 404
+    def test_unknown_ticker_is_404(self, admin_client):
+        assert admin_client.get("/terminal/stocks/NOSUCH").status_code == 404
 
-    def test_paper_mode_shown_in_header(self, client):
-        assert "PAPER" in client.get("/").text
+    def test_paper_mode_shown_in_header(self, admin_client):
+        assert "PAPER" in admin_client.get("/terminal").text
+
+    def test_terminal_is_closed_to_anonymous_visitors(self, client):
+        # "/terminal" itself redirects to "/terminal/" before any dependency
+        # runs, so ask for the resolved path.
+        response = client.get("/terminal/", follow_redirects=False)
+        # Redirected to sign in — never rendered.
+        assert response.status_code in (303, 307)
+        assert "/login" in response.headers.get("location", "")
+
+    def test_terminal_is_closed_to_ordinary_subscribers(self, client):
+        from backend.accounts.security import sign_value
+        from backend.accounts.service import open_session, register_user
+        from backend.core.config import get_settings
+        from backend.core.database import get_db as _get_db
+
+        generator = client.app.dependency_overrides[_get_db]()
+        db = next(generator)
+        try:
+            result = register_user(
+                db, email="subscriber@example.com", password="Lantern-Meadow-42",
+                confirm_password="Lantern-Meadow-42",
+            )
+            assert result.ok and result.user is not None, result.error
+            user = result.user
+            user.email_verified_at = datetime.now(timezone.utc)
+            user.role = "USER"
+            token = open_session(db, user)
+            db.commit()
+        finally:
+            generator.close()
+
+        client.cookies.set(get_settings().session_cookie, sign_value(token))
+        assert client.get("/terminal/").status_code == 403
 
 
 class TestApiEndpoints:
@@ -212,14 +283,14 @@ class TestBacktestApi:
 
 
 class TestOpportunityFilters:
-    def test_filters_narrow_results(self, client):
-        wide = client.get("/opportunities")
-        narrow = client.get("/opportunities?min_score=99")
+    def test_filters_narrow_results(self, admin_client):
+        wide = admin_client.get("/terminal/opportunities")
+        narrow = admin_client.get("/terminal/opportunities?min_score=99")
         assert wide.status_code == narrow.status_code == 200
         assert len(narrow.text) <= len(wide.text)
 
-    def test_unknown_metric_excludes_rather_than_passes(self, client):
+    def test_unknown_metric_excludes_rather_than_passes(self, admin_client):
         # A filter on a metric no name has must return nothing, not everything.
-        response = client.get("/opportunities?max_pe=0.0001")
+        response = admin_client.get("/terminal/opportunities?max_pe=0.0001")
         assert response.status_code == 200
         assert "No names match" in response.text

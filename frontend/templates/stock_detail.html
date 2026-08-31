@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ company.ticker }} — EGX ALPHA{% endblock %}
+{% block title %}{{ company.ticker }} — GMG Terminal{% endblock %}
 {% block content %}
 {% set a = analysis.alpha %}
 {% set t = analysis.technical %}
@@ -16,14 +16,14 @@
     </div>
   </div>
   <div class="spacer"></div>
-  <a class="btn" href="/research?ticker={{ company.ticker }}">Run Research</a>
-  <a class="btn btn-primary" href="/paper-trading">Paper Trade</a>
+  <a class="btn" href="/terminal/research?ticker={{ company.ticker }}">Run Research</a>
+  <a class="btn btn-primary" href="/terminal/paper-trading">Paper Trade</a>
 </div>
 
 <!-- ---------- Score header ---------- -->
 <div class="panel">
   <div class="panel-header">
-    <span class="panel-title">EGX ALPHA Score</span>
+    <span class="panel-title">GMG Terminal Score</span>
     <span class="panel-meta">
       as of {{ a.as_of }} · confidence {{ a.score.confidence.value }} ·
       coverage {{ a.score.coverage | fmt_pct(0) }}
@@ -278,7 +278,7 @@
     <span class="panel-meta">
       v{{ thesis.version }} · {{ thesis.generated_by }} ·
       updated {{ thesis.updated_at.date() if thesis.updated_at else '—' }} ·
-      <a href="/theses/{{ thesis.thesis_id }}">full thesis →</a>
+      <a href="/terminal/theses/{{ thesis.thesis_id }}">full thesis →</a>
     </span>
   </div>
   <div class="panel-body">
@@ -386,7 +386,7 @@
       <div class="hint">
         Run the agent pipeline to produce a fundamental, technical, event and bear
         analysis, then a portfolio-manager decision.
-        <br><br><a class="btn btn-primary" href="/research?ticker={{ company.ticker }}">Run research now</a>
+        <br><br><a class="btn btn-primary" href="/terminal/research?ticker={{ company.ticker }}">Run research now</a>
       </div>
     </div>
   </div>
@@ -455,7 +455,7 @@
 <div class="panel">
   <div class="panel-header"><span class="panel-title">Watchlist</span></div>
   <div class="panel-body">
-    <form method="post" action="/watchlist/add" class="form-row" style="margin:0">
+    <form method="post" action="/terminal/watchlist/add" class="form-row" style="margin:0">
       <input type="hidden" name="ticker" value="{{ company.ticker }}">
       <div class="field">
         <label>List</label>

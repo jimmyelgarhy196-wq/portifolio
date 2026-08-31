@@ -300,6 +300,12 @@ def multiples_valuation(
 # ---------------------------------------------------------------------------
 # Blended view
 # ---------------------------------------------------------------------------
+#: When the highest method exceeds the lowest by more than this, the methods
+#: disagree too much for their average to mean anything, and no single figure
+#: is published.
+MAX_METHOD_DISPERSION = 2.5
+
+
 @dataclass
 class ValuationSummary:
     current_price: float | None
@@ -312,6 +318,8 @@ class ValuationSummary:
     dcf: dict[str, Any]
     note: str
     currency: str = "EGP"
+    dispersion: float | None = None
+    withheld: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return self.__dict__.copy()
@@ -365,6 +373,25 @@ def blended_valuation(
     total_weight = sum(w for _, w in values)
     fair = sum(v * w for v, w in values) / total_weight if total_weight else None
     raw = [v for v, _ in values]
+    low, high = min(raw), max(raw)
+    dispersion = (high / low) if low > 0 else None
+
+    # When the methods disagree by more than the threshold, averaging them
+    # manufactures a precision that does not exist. The range is reported
+    # instead, and no headline fair value is published.
+    if dispersion is not None and dispersion > MAX_METHOD_DISPERSION and len(values) > 1:
+        return ValuationSummary(
+            current_price=current_price, fair_value=None, upside=None,
+            method_count=len(values), low=low, high=high, methods=rows,
+            dcf=dcf.to_dict(), currency=currency, dispersion=dispersion, withheld=True,
+            note=(
+                f"No single fair value is published. The methods that completed disagree by "
+                f"{dispersion:.1f}x — from {low:,.2f} to {high:,.2f} — and averaging them "
+                "would invent a precision the data does not support. Look at the individual "
+                "methods below and judge which assumptions you accept. " + ASSUMPTION_NOTE
+            ),
+        )
+
     upside = ((fair - current_price) / current_price) if (fair and current_price) else None
 
     note = ASSUMPTION_NOTE
@@ -375,6 +402,6 @@ def blended_valuation(
         )
     return ValuationSummary(
         current_price=current_price, fair_value=fair, upside=upside,
-        method_count=len(values), low=min(raw), high=max(raw), methods=rows,
-        dcf=dcf.to_dict(), note=note, currency=currency,
+        method_count=len(values), low=low, high=high, methods=rows,
+        dcf=dcf.to_dict(), note=note, currency=currency, dispersion=dispersion,
     )

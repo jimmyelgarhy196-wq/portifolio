@@ -98,7 +98,7 @@
         <td>{{ s.created_at | fmt_dt }}</td>
         <td>{{ s.last_seen_at | fmt_dt }}</td>
         <td class="hide-sm mono text-xs">{{ s.ip or '—' }}</td>
-        <td class="hide-sm text-xs faint">{{ (s.user_agent or '—')[:60] }}</td>
+        <td class="hide-sm text-xs faint">{{ (s.user_agent or '—') | truncate(70, false, '…') }}</td>
       </tr>
       {% endfor %}
       </tbody>

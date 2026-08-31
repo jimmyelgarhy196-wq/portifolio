@@ -38,7 +38,7 @@
           {% for item in news[:6] %}
           <tr>
             <td class="faint nowrap" style="width:96px">{{ item.publication_date | fmt_date }}</td>
-            <td>{{ item.headline }}<div class="text-xs faint">{{ item.source or 'Source not recorded' }}</div></td>
+            <td>{{ item.title }}<div class="text-xs faint">{{ item.news_source or 'Source not recorded' }}</div></td>
           </tr>
           {% endfor %}
           </tbody>
@@ -98,6 +98,18 @@
           <dt>Range</dt><dd>{{ valuation.low | fmt_num(2) }} – {{ valuation.high | fmt_num(2) }}</dd>
         </dl>
         <p class="text-xs faint mt-16 mb-0">{{ valuation.note }}</p>
+        {% elif valuation.withheld %}
+        <dl class="kv">
+          <dt>Fair value range</dt>
+          <dd>{{ valuation.low | fmt_num(2) }} – {{ valuation.high | fmt_num(2) }}</dd>
+          <dt>Current price</dt><dd>{{ valuation.current_price | fmt_price('') }}</dd>
+          <dt>Methods used</dt><dd>{{ valuation.method_count }}</dd>
+          <dt>Disagreement</dt><dd>{{ valuation.dispersion | fmt_num(1) }}x</dd>
+        </dl>
+        <p class="text-xs faint mt-16 mb-0">
+          No single fair value is published: the methods disagree too much for an average
+          to be meaningful.
+        </p>
         {% else %}
         <p class="na mb-0">{{ valuation.note }}</p>
         {% endif %}

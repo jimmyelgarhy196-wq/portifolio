@@ -49,7 +49,7 @@
         <tbody>
         {% for p in providers %}
         <tr>
-          <td>{{ p.name }}<div class="text-xs faint">{{ p.note[:90] }}</div></td>
+          <td>{{ p.name }}<div class="text-xs faint">{{ p.note | truncate(120, false, '…') }}</div></td>
           <td>{% if p.is_demo %}<span class="badge badge-demo">Demo</span>
               {% elif p.available %}<span class="badge badge-live">Available</span>
               {% else %}<span class="badge badge-none">Not configured</span>{% endif %}</td>

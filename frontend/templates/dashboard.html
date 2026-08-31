@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — EGX ALPHA{% endblock %}
+{% block title %}Dashboard — GMG Terminal{% endblock %}
 {% block content %}
 
 <div class="page-head">
@@ -10,8 +10,8 @@
     </div>
   </div>
   <div class="spacer"></div>
-  <a href="/opportunities" class="btn">Scan Opportunities</a>
-  <a href="/research" class="btn btn-primary">Run Research</a>
+  <a href="/terminal/opportunities" class="btn">Scan Opportunities</a>
+  <a href="/terminal/research" class="btn btn-primary">Run Research</a>
 </div>
 
 <!-- ---------- Portfolio headline ---------- -->
@@ -81,7 +81,7 @@
     <div class="panel">
       <div class="panel-header">
         <span class="panel-title">Top Opportunities</span>
-        <span class="panel-meta">not currently held · ranked by EGX ALPHA score</span>
+        <span class="panel-meta">not currently held · ranked by GMG Terminal score</span>
       </div>
       <div class="panel-body flush">
         {% if opportunities %}
@@ -127,7 +127,7 @@
     <div class="panel">
       <div class="panel-header">
         <span class="panel-title">Portfolio</span>
-        <span class="panel-meta"><a href="/portfolio">full view →</a></span>
+        <span class="panel-meta"><a href="/terminal/portfolio">full view →</a></span>
       </div>
       <div class="panel-body flush">
         {% if positions %}
@@ -166,7 +166,7 @@
           <div class="title">No open positions</div>
           <div class="hint">
             All {{ portfolio.currency }} {{ portfolio.cash | fmt_num(0) }} is in cash.
-            Execute a simulated trade from <a href="/paper-trading">Paper Trading</a>.
+            Execute a simulated trade from <a href="/terminal/paper-trading">Paper Trading</a>.
           </div>
         </div>
         {% endif %}
@@ -179,7 +179,7 @@
     <div class="panel">
       <div class="panel-header">
         <span class="panel-title">Risk</span>
-        <span class="panel-meta"><a href="/risk">detail →</a></span>
+        <span class="panel-meta"><a href="/terminal/risk">detail →</a></span>
       </div>
       <div class="panel-body">
         <dl class="kv">
@@ -228,8 +228,8 @@
           <dt>Narrative engine</dt><dd>{{ 'LLM' if ai_enabled else 'Deterministic' }}</dd>
         </dl>
         <div class="divider"></div>
-        <a href="/theses" class="btn btn-sm">View theses</a>
-        <a href="/evaluation" class="btn btn-sm">Track record</a>
+        <a href="/terminal/theses" class="btn btn-sm">View theses</a>
+        <a href="/terminal/evaluation" class="btn btn-sm">Track record</a>
       </div>
     </div>
 
@@ -237,7 +237,7 @@
     <div class="panel">
       <div class="panel-header">
         <span class="panel-title">Alerts</span>
-        <span class="panel-meta"><a href="/alerts">all →</a></span>
+        <span class="panel-meta"><a href="/terminal/alerts">all →</a></span>
       </div>
       <div class="panel-body">
         {% if alerts %}
@@ -264,12 +264,12 @@
             {{ latest_report.title }}<br>
             <span class="faint">{{ latest_report.period_start }} → {{ latest_report.period_end }}</span>
           </div>
-          <a href="/reports?report_id={{ latest_report.id }}" class="btn btn-primary btn-sm">View latest report</a>
+          <a href="/terminal/reports?report_id={{ latest_report.id }}" class="btn btn-primary btn-sm">View latest report</a>
         {% else %}
           <div class="faint" style="font-size:12px;margin-bottom:9px">
             No report has been generated yet.
           </div>
-          <form method="post" action="/reports/generate" style="margin:0">
+          <form method="post" action="/terminal/reports/generate" style="margin:0">
             <button class="btn btn-sm" type="submit">Generate now</button>
           </form>
         {% endif %}

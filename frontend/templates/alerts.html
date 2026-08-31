@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Alerts — EGX ALPHA{% endblock %}
+{% block title %}Alerts — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><h1 class="page-title">Alerts</h1>
@@ -9,7 +9,7 @@
     </div></div>
   <div class="spacer"></div>
   {% for s in ['NEW','ACK','ALL'] %}
-  <a class="btn {{ 'btn-primary' if status==s }}" href="/alerts?status={{ s }}">{{ s }}</a>
+  <a class="btn {{ 'btn-primary' if status==s }}" href="/terminal/alerts?status={{ s }}">{{ s }}</a>
   {% endfor %}
 </div>
 
@@ -33,7 +33,7 @@
           <td class="mono faint">{{ a.created_at.strftime('%Y-%m-%d %H:%M') if a.created_at else '—' }}</td>
           <td><span class="tag {{ 'tag-sell' if a.severity=='critical' else ('tag-watch' if a.severity=='warning' else 'tag-hold') }}">{{ a.severity }}</span></td>
           <td class="faint">{{ a.alert_type|replace('_',' ') }}</td>
-          <td>{% if a.ticker %}<a href="/stocks/{{ a.ticker }}" class="ticker">{{ a.ticker }}</a>{% else %}—{% endif %}</td>
+          <td>{% if a.ticker %}<a href="/terminal/stocks/{{ a.ticker }}" class="ticker">{{ a.ticker }}</a>{% else %}—{% endif %}</td>
           <td style="white-space:normal">
             <strong>{{ a.title }}</strong>
             <div class="dim" style="font-size:11.5px">{{ (a.message or '').split('\n')[0][:160] }}</div>
@@ -41,7 +41,7 @@
           <td class="faint">{{ a.status }}</td>
           <td>
             {% if a.status == 'NEW' %}
-            <form method="post" action="/alerts/{{ a.id }}/ack" style="margin:0">
+            <form method="post" action="/terminal/alerts/{{ a.id }}/ack" style="margin:0">
               <button class="btn btn-sm" type="submit">Ack</button>
             </form>
             {% endif %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Paper Trading — EGX ALPHA{% endblock %}
+{% block title %}Paper Trading — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><h1 class="page-title">Paper Trading</h1>
@@ -24,7 +24,7 @@
 <div class="panel">
   <div class="panel-header"><span class="panel-title">Execute Simulated Trade</span></div>
   <div class="panel-body">
-    <form method="post" action="/paper-trading/execute" class="form-row" style="margin:0">
+    <form method="post" action="/terminal/paper-trading/execute" class="form-row" style="margin:0">
       <div class="field"><label>Ticker</label>
         <select name="ticker" required style="min-width:130px">
           {% for c in companies %}<option value="{{ c.ticker }}">{{ c.ticker }} — {{ c.name[:26] }}</option>{% endfor %}

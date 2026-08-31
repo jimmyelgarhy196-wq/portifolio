@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Watchlist — EGX ALPHA{% endblock %}
+{% block title %}Watchlist — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head"><div><h1 class="page-title">Watchlist</h1>
   <div class="page-sub">Four lists: core holdings, swing candidates, paper shorts, special situations</div></div></div>
@@ -7,7 +7,7 @@
 <div class="panel">
   <div class="panel-header"><span class="panel-title">Add to Watchlist</span></div>
   <div class="panel-body">
-    <form method="post" action="/watchlist/add" class="form-row" style="margin:0">
+    <form method="post" action="/terminal/watchlist/add" class="form-row" style="margin:0">
       <div class="field"><label>Ticker</label>
         <select name="ticker" required style="min-width:200px">
           {% for c in companies %}<option value="{{ c.ticker }}">{{ c.ticker }} — {{ c.name[:30] }}</option>{% endfor %}
@@ -36,13 +36,13 @@
         <tbody>
         {% for row in grouped[name] %}{% set i = row.item %}
         <tr>
-          <td><a href="/stocks/{{ i.ticker }}" class="ticker">{{ i.ticker }}</a></td>
+          <td><a href="/terminal/stocks/{{ i.ticker }}" class="ticker">{{ i.ticker }}</a></td>
           <td class="num">{{ row.price | fmt_num(2) }}</td>
           <td class="num">{{ i.target_price | fmt_num(2) }}</td>
           <td class="num"><span class="score {{ row.score | score_class }}">{{ row.score | fmt_num(0) }}</span></td>
           <td class="dim" style="white-space:normal">{{ (i.note or '')[:60] }}</td>
           <td>
-            <form method="post" action="/watchlist/remove/{{ i.id }}" style="margin:0">
+            <form method="post" action="/terminal/watchlist/remove/{{ i.id }}" style="margin:0">
               <button class="btn btn-sm btn-danger" type="submit">×</button>
             </form>
           </td>

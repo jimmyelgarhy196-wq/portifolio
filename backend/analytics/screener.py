@@ -27,26 +27,45 @@ class FilterSpec:
 
 #: Every filter the screener offers, with where its value comes from.
 FILTERS: list[FilterSpec] = [
-    FilterSpec("price", "Price (EGP)", "currency", "quote"),
-    FilterSpec("change_pct", "Daily change", "percent", "quote"),
-    FilterSpec("volume", "Volume", "currency", "quote"),
-    FilterSpec("turnover", "Traded value (EGP)", "currency", "quote"),
+    # --- Price and liquidity (from the quote cache) -------------------------
+    FilterSpec("price", "Price (EGP)", "currency", "quote", "Last traded price"),
+    FilterSpec("change_pct", "Daily change", "percent", "quote", "Move since the previous close"),
+    FilterSpec("volume", "Volume", "number", "quote", "Shares traded today"),
+    FilterSpec("turnover", "Traded value (EGP)", "currency", "quote", "Value traded today"),
+    # --- Valuation (from the fundamental engine) ----------------------------
     FilterSpec("market_cap", "Market capitalisation (EGP)", "currency", "fundamental"),
-    FilterSpec("pe", "P/E", "times", "fundamental"),
-    FilterSpec("pb", "P/B", "times", "fundamental"),
+    FilterSpec("pe", "P/E", "times", "fundamental", "Price to trailing earnings"),
+    FilterSpec("pb", "P/B", "times", "fundamental", "Price to book value"),
     FilterSpec("ev_ebitda", "EV/EBITDA", "times", "fundamental"),
-    FilterSpec("dividend_yield", "Dividend yield", "percent", "fundamental"),
+    FilterSpec("fcf_yield", "Free cash flow yield", "percent", "fundamental"),
+    # --- Quality and growth --------------------------------------------------
     FilterSpec("roe", "Return on equity", "percent", "fundamental"),
+    FilterSpec("roic", "Return on invested capital", "percent", "fundamental"),
     FilterSpec("net_margin", "Net margin", "percent", "fundamental"),
     FilterSpec("revenue_growth", "Revenue growth", "percent", "fundamental"),
+    FilterSpec("revenue_cagr", "Revenue CAGR", "percent", "fundamental"),
+    FilterSpec("eps_growth", "EPS growth", "percent", "fundamental"),
     FilterSpec("debt_to_equity", "Debt to equity", "times", "fundamental"),
-    FilterSpec("current_ratio", "Current ratio", "times", "fundamental"),
-    FilterSpec("fcf_yield", "Free cash flow yield", "percent", "fundamental"),
+    # --- Momentum and risk ---------------------------------------------------
+    FilterSpec("momentum_3m", "3-month momentum", "percent", "quant"),
+    FilterSpec("momentum_12m", "12-month momentum", "percent", "quant"),
+    FilterSpec("volatility_20d", "20-day volatility", "percent", "quant"),
+    # --- GMG scores ----------------------------------------------------------
     FilterSpec("alpha_score", "GMG score", "score", "score"),
     FilterSpec("fundamental_score", "Fundamental score", "score", "score"),
     FilterSpec("technical_score", "Technical score", "score", "score"),
-    FilterSpec("rsi14", "RSI (14)", "ratio", "score"),
 ]
+
+#: Grouping for the filter panel, so nineteen inputs do not arrive as one list.
+FILTER_GROUPS: list[tuple[str, tuple[str, ...]]] = [
+    ("Price & liquidity", ("price", "change_pct", "volume", "turnover")),
+    ("Valuation", ("market_cap", "pe", "pb", "ev_ebitda", "fcf_yield")),
+    ("Quality & growth", ("roe", "roic", "net_margin", "revenue_growth",
+                          "revenue_cagr", "eps_growth", "debt_to_equity")),
+    ("Momentum & risk", ("momentum_3m", "momentum_12m", "volatility_20d")),
+    ("GMG scores", ("alpha_score", "fundamental_score", "technical_score")),
+]
+
 
 FILTER_BY_KEY = {f.key: f for f in FILTERS}
 
@@ -100,12 +119,15 @@ def _row_values(
         values["fundamental_score"] = score.fundamental_score
         values["technical_score"] = score.technical_score
     if metrics:
-        for key in ("pe", "pb", "ev_ebitda", "dividend_yield", "roe", "net_margin",
-                    "revenue_growth", "debt_to_equity", "current_ratio", "fcf_yield",
-                    "market_cap"):
+        for key in FILTER_BY_KEY:
             value = metrics.get(key)
+            # A quote-sourced value already present wins: it is today's, not
+            # the value as of the last statement.
             if value is not None and values.get(key) is None:
-                values[key] = value
+                try:
+                    values[key] = float(value)
+                except (TypeError, ValueError):
+                    values[key] = None
     return values
 
 

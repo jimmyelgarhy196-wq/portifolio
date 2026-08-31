@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Theses — EGX ALPHA{% endblock %}
+{% block title %}Theses — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><h1 class="page-title">Investment Theses</h1>
     <div class="page-sub">{{ theses|length }} thesis records · updated weekly rather than replaced</div></div>
   <div class="spacer"></div>
   {% for s in ['ACTIVE','WATCH','INVALIDATED','EXIT_PROPOSED'] %}
-  <a class="btn {{ 'btn-primary' if status==s }}" href="/theses?status={{ s }}">{{ s|replace('_',' ') }}</a>
+  <a class="btn {{ 'btn-primary' if status==s }}" href="/terminal/theses?status={{ s }}">{{ s|replace('_',' ') }}</a>
   {% endfor %}
-  <a class="btn {{ 'btn-primary' if not status }}" href="/theses">All</a>
+  <a class="btn {{ 'btn-primary' if not status }}" href="/terminal/theses">All</a>
 </div>
 
 <div class="panel">

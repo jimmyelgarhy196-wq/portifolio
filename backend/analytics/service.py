@@ -413,7 +413,9 @@ def build_peer_metrics(
     sector_map: dict[str, str],
     ticker: str,
     *,
-    keys: Sequence[str] = ("pe", "pb", "ev_ebitda", "roe", "net_margin"),
+    keys: Sequence[str] = (
+        "pe", "pb", "ps", "ev_ebitda", "roe", "net_margin", "dividend_yield",
+    ),
     min_peers: int = 3,
 ) -> dict[str, list[float]]:
     """Peer values from the *same sector* only.

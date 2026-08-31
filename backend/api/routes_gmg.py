@@ -262,12 +262,25 @@ def _metric(analysis, name: str) -> float | None:
 
 
 def _valuation_for(db: Session, analysis, universe_metrics, sector_map, price: float | None):
-    """Build the valuation view from stored fundamentals only."""
+    """Build the valuation view from stored fundamentals only.
+
+    Per-share figures are derived from the price and the company's own guarded
+    multiples (EPS = price / (P/E), and so on) rather than from raw statement
+    lines. That inherits the scale detection and the plausibility bounds the
+    metric engine already applied, so a statement reported in thousands cannot
+    produce a valuation a thousand times too large.
+    """
     company = analysis.company
     shares = company.shares_outstanding if company else None
     fcf = _metric(analysis, "free_cash_flow")
     net_debt = _metric(analysis, "net_debt") or 0.0
-    growth = _metric(analysis, "revenue_growth")
+    growth = _metric(analysis, "fcf_growth")
+    if growth is None:
+        growth = _metric(analysis, "revenue_growth")
+    # Cap the starting growth rate: a single strong year is not a forecast.
+    if growth is not None:
+        growth = max(-0.25, min(growth, 0.30))
+
     assumptions = DcfAssumptions(
         base_fcf=fcf, shares_outstanding=shares, net_debt=net_debt,
         growth_rate=growth if growth is not None else 0.10,
@@ -283,22 +296,42 @@ def _valuation_for(db: Session, analysis, universe_metrics, sector_map, price: f
         mid = len(ordered) // 2
         return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
 
+    def per_share(multiple_name: str) -> float | None:
+        """Invert a guarded multiple back into its per-share figure."""
+        multiple = _metric(analysis, multiple_name)
+        if price is None or multiple is None or multiple <= 0:
+            return None
+        return price / multiple
+
     multiples = multiples_valuation(
-        eps=_metric(analysis, "eps"),
-        book_value_per_share=(
-            (_metric(analysis, "total_equity") / shares)
-            if (_metric(analysis, "total_equity") and shares) else None
-        ),
-        sales_per_share=(
-            (_metric(analysis, "revenue") / shares)
-            if (_metric(analysis, "revenue") and shares) else None
-        ),
+        eps=per_share("pe"),
+        book_value_per_share=per_share("pb"),
+        sales_per_share=per_share("ps"),
         peer_pe=median(peer.get("pe")),
         peer_pb=median(peer.get("pb")),
         peer_ps=median(peer.get("ps")),
+        own_pe_median=_own_pe_median(db, analysis.ticker),
     )
     summary = blended_valuation(current_price=price, dcf=dcf, multiples=multiples)
     return summary, assumptions, dcf
+
+
+def _own_pe_median(db: Session, ticker: str) -> float | None:
+    """The company's own median P/E from stored valuation snapshots."""
+    from backend.data.models import ValuationSnapshot
+
+    values = [
+        row.pe for row in db.execute(
+            select(ValuationSnapshot).where(ValuationSnapshot.ticker == ticker)
+            .order_by(desc(ValuationSnapshot.date)).limit(24)
+        ).scalars().all()
+        if row.pe is not None and 0 < row.pe < 100
+    ]
+    if len(values) < 3:
+        return None
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
 
 
 @router.get("/stock/{ticker}", response_class=HTMLResponse)
@@ -369,7 +402,9 @@ def stock_page(
                 {
                     "period_label": st.period,
                     "period_end": st.period_end,
-                    "values": {field: getattr(st, field) for _label, field in STATEMENT_LINES},
+                    # Named "lines", not "values": in a Jinja template
+                    # ``row.values`` resolves to dict.values() instead.
+                    "lines": {field: getattr(st, field) for _label, field in STATEMENT_LINES},
                 }
                 for st in statements
             ]

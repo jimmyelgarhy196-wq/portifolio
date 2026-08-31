@@ -434,19 +434,33 @@
     ctx.setLineDash([]);
   };
 
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function axisDate(iso, spanDays) {
+    // Day and month while the window is short; month and year once it is long,
+    // so a five-year chart does not print an unreadable run of full dates.
+    var parts = String(iso).slice(0, 10).split("-");
+    if (parts.length < 3) return String(iso).slice(0, 10);
+    var mon = MONTHS[parseInt(parts[1], 10) - 1] || parts[1];
+    if (spanDays > 900) return mon + " " + parts[0].slice(2);
+    if (spanDays > 200) return mon + " " + parts[0].slice(2);
+    return parseInt(parts[2], 10) + " " + mon;
+  }
+
   PriceChart.prototype._dateAxis = function (g, bars) {
     var ctx = g.ctx;
     var n = bars.length;
     var steps = Math.min(6, n);
+    var span = n;  // trading days, close enough for choosing a label format
     ctx.fillStyle = T.axis;
     ctx.font = "10px ui-monospace, monospace";
     ctx.textBaseline = "top";
     for (var i = 0; i < steps; i++) {
       var idx = Math.round((n - 1) * (i / Math.max(steps - 1, 1)));
       var x = this._x(g, idx, n);
-      var d = bars[idx].date;
       ctx.textAlign = i === 0 ? "left" : (i === steps - 1 ? "right" : "center");
-      ctx.fillText(String(d).slice(2, 10), x, g.h - g.bottom + 2);
+      ctx.fillText(axisDate(bars[idx].date, span * 1.4), x, g.h - g.bottom + 2);
     }
   };
 

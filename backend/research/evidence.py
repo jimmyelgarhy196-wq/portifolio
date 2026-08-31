@@ -256,7 +256,7 @@ def build_evidence_pack(analysis: StockAnalysis) -> EvidencePack:
 
     # --- Scores (computed, never agent-produced) ----------------------------
     alpha = analysis.alpha
-    pack.add("alpha_score", "EGX ALPHA score", alpha.value, unit="score",
+    pack.add("alpha_score", "GMG score", alpha.value, unit="score",
              source="computed:master_score", category="scores")
     for label, sub in (
         ("Fundamental score", alpha.fundamental), ("Technical score", alpha.technical),

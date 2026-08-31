@@ -204,6 +204,26 @@ def contact_submit(
     ))
 
 
+#: The brand mark, served as an SVG so browsers requesting /favicon.ico get a
+#: real icon instead of a 404 in every visitor's console.
+FAVICON_SVG = (
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>"
+    "<rect width='64' height='64' rx='14' fill='#d4af37'/>"
+    "<text x='32' y='43' font-size='26' font-weight='bold' text-anchor='middle' "
+    "font-family='sans-serif' fill='#10131a'>G</text></svg>"
+)
+
+
+@router.get("/favicon.ico", include_in_schema=False)
+def favicon() -> Any:
+    from fastapi.responses import Response
+
+    return Response(
+        content=FAVICON_SVG, media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 @router.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
 def robots() -> str:
     """Marketing pages are indexable; the application and account areas are not."""

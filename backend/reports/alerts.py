@@ -187,7 +187,7 @@ def check_score_changes(
             severity="warning" if delta < 0 else "info",
             title=f"{ticker} score {direction} {abs(delta):.0f} points",
             message=(
-                f"The EGX ALPHA score for {ticker} moved from "
+                f"The GMG score for {ticker} moved from "
                 f"{previous.alpha_score:.0f} to {current.alpha_score:.0f} between "
                 f"{previous.as_of} and {current.as_of}."
             ),
@@ -221,7 +221,7 @@ def check_high_conviction(
             session, alert_type="HIGH_CONVICTION", ticker=row.ticker, severity="info",
             title=f"{row.ticker} scores {row.alpha_score:.0f} and is not held",
             message=(
-                f"{row.ticker} has an EGX ALPHA score of {row.alpha_score:.0f} "
+                f"{row.ticker} has an GMG score of {row.alpha_score:.0f} "
                 f"(confidence {row.confidence}) and is not in the portfolio. "
                 "Review the thesis."
             ),
@@ -369,7 +369,7 @@ def dispatch_notifications(
                 httpx.post(
                     settings.notify_webhook_url,
                     json={
-                        "source": "EGX ALPHA",
+                        "source": "GMG",
                         "severity": alert.severity,
                         "title": alert.title,
                         "message": alert.message,
@@ -402,14 +402,14 @@ def _send_email(settings: Any, alert: Alert) -> None:
     from email.message import EmailMessage
 
     message = EmailMessage()
-    message["Subject"] = f"[EGX ALPHA] {alert.title}"
+    message["Subject"] = f"[GMG] {alert.title}"
     message["From"] = settings.smtp_user or "egx-alpha@localhost"
     message["To"] = settings.notify_email_to
     message.set_content(
         f"{alert.title}\n\n{alert.message}\n\n"
         f"Severity: {alert.severity}\nType: {alert.alert_type}\n"
         f"Ticker: {alert.ticker or '—'}\n\n"
-        "This is an automated message from your EGX ALPHA research terminal. "
+        "This is an automated message from GMG Investment Intelligence. "
         "It is research output, not investment advice."
     )
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:

@@ -40,7 +40,7 @@ DESCRIPTIONS = {
 
 PROVENANCE = {"source", "retrieved_at", "data_period", "confidence"}
 
-HEADER = """# EGX ALPHA — Database Schema
+HEADER = """# GMG — Database Schema
 
 Auto-generated from the SQLAlchemy models. Regenerate after a model change with:
 

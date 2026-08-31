@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Portfolio — EGX ALPHA{% endblock %}
+{% block title %}Portfolio — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -7,7 +7,7 @@
     <div class="page-sub">{{ portfolio.name }} · <span class="tag tag-watch">PAPER</span> · benchmark {{ portfolio.benchmark_ticker }}</div>
   </div>
   <div class="spacer"></div>
-  <a class="btn btn-primary" href="/paper-trading">Trade</a>
+  <a class="btn btn-primary" href="/terminal/paper-trading">Trade</a>
 </div>
 
 <div class="grid grid-4" style="margin-bottom:14px">
@@ -57,7 +57,7 @@
             <td class="num {{ r.return_pct | direction_class }}">{{ r.return_pct | fmt_pct(2,'—',true) }}</td>
             <td class="num {{ p.unrealized_pnl | direction_class }}">{{ p.unrealized_pnl | fmt_num(0) }}</td>
             <td class="num"><span class="score {{ r.score | score_class }}">{{ r.score | fmt_num(0) }}</span></td>
-            <td>{% if r.thesis %}<a href="/theses/{{ r.thesis.thesis_id }}">{{ r.thesis.reference }}</a>{% else %}<span class="faint">none</span>{% endif %}</td>
+            <td>{% if r.thesis %}<a href="/terminal/theses/{{ r.thesis.thesis_id }}">{{ r.thesis.reference }}</a>{% else %}<span class="faint">none</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -65,7 +65,7 @@
     </div>
     {% else %}
     <div class="empty-state"><div class="title">No open positions</div>
-      <div class="hint">All capital is in cash. Execute a simulated trade from <a href="/paper-trading">Paper Trading</a>.</div></div>
+      <div class="hint">All capital is in cash. Execute a simulated trade from <a href="/terminal/paper-trading">Paper Trading</a>.</div></div>
     {% endif %}
   </div>
 </div>

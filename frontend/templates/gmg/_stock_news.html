@@ -10,10 +10,10 @@
         <tr>
           <td class="faint nowrap" style="width:92px">{{ item.publication_date | fmt_date }}</td>
           <td>
-            {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.headline }}</a>
-            {% else %}{{ item.headline }}{% endif %}
+            {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+            {% else %}{{ item.title }}{% endif %}
             <div class="text-xs faint">
-              {{ item.source or 'Source not recorded' }}
+              {{ item.news_source or 'Source not recorded' }}
               {% if item.sentiment is not none %}· sentiment {{ item.sentiment | fmt_num(2) }}{% endif %}
             </div>
           </td>
@@ -40,7 +40,7 @@
           <td>
             {% if d.url %}<a href="{{ d.url }}" target="_blank" rel="noopener noreferrer">{{ d.title }}</a>
             {% else %}{{ d.title }}{% endif %}
-            <div class="text-xs faint">{{ d.category or 'Uncategorised' }} · {{ d.source or 'Source not recorded' }}</div>
+            <div class="text-xs faint">{{ d.disclosure_type or 'Uncategorised' }} · {{ d.source or 'Source not recorded' }}</div>
           </td>
         </tr>
         {% endfor %}

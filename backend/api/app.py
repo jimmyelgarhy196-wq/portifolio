@@ -4,7 +4,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from datetime import date
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -90,8 +90,15 @@ def create_app() -> FastAPI:
     app.include_router(workspace_router)
     app.include_router(admin_router)
     app.include_router(api_router)
-    # The original research terminal, kept for the internal research workflow.
-    app.include_router(pages_router)
+    # The original research terminal, kept for GMG's own analysts. It is mounted
+    # under /terminal so it cannot shadow the customer-facing routes, and it is
+    # restricted to administrators: it exposes the full research stack —
+    # backtesting, paper trading, risk and thesis management — which is internal
+    # tooling, not part of the subscription.
+    from backend.api.auth_deps import require_admin
+
+    app.include_router(pages_router, prefix="/terminal",
+                       dependencies=[Depends(require_admin)])
 
     _install_error_handlers(app, settings)
 

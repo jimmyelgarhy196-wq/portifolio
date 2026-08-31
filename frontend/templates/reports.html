@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Reports — EGX ALPHA{% endblock %}
+{% block title %}Reports — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><h1 class="page-title">Reports</h1>
@@ -9,7 +9,7 @@
     <input type="text" name="q" value="{{ q }}" placeholder="Search report text…" style="width:190px">
     <button class="btn" type="submit">Search</button>
   </form>
-  <form method="post" action="/reports/generate" style="margin:0">
+  <form method="post" action="/terminal/reports/generate" style="margin:0">
     <button class="btn btn-primary" type="submit">Generate now</button>
   </form>
 </div>
@@ -34,7 +34,7 @@
             </td>
             <td>
               {% if selected and selected.id != r.id %}
-              <a href="/reports?report_id={{ selected.id }}&compare={{ r.id }}" class="btn btn-sm"
+              <a href="/terminal/reports?report_id={{ selected.id }}&compare={{ r.id }}" class="btn btn-sm"
                  onclick="event.stopPropagation()">Compare</a>
               {% endif %}
             </td>
@@ -54,7 +54,7 @@
       <span class="panel-title">{{ selected.title if selected else 'Report' }}</span>
       {% if selected %}
       <span class="panel-meta">
-        <a href="/reports/{{ selected.id }}/export">export markdown ↓</a>
+        <a href="/terminal/reports/{{ selected.id }}/export">export markdown ↓</a>
       </span>
       {% endif %}
     </div>

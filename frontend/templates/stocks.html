@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Stocks — EGX ALPHA{% endblock %}
+{% block title %}Stocks — GMG Terminal{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -8,7 +8,7 @@
   </div>
   <div class="spacer"></div>
   {% for i in ['all','egx30','egx70','egx100'] %}
-  <a class="btn {{ 'btn-primary' if index==i }}" href="/stocks?index={{ i }}">{{ i|upper }}</a>
+  <a class="btn {{ 'btn-primary' if index==i }}" href="/terminal/stocks?index={{ i }}">{{ i|upper }}</a>
   {% endfor %}
 </div>
 

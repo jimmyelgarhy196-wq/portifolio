@@ -54,7 +54,7 @@ class WeeklyRunResult:
         }
 
     def render(self) -> str:
-        lines = [f"EGX ALPHA weekly run — {self.as_of.isoformat()}", ""]
+        lines = [f"GMG weekly run — {self.as_of.isoformat()}", ""]
         for index, step in enumerate(self.steps, start=1):
             icon = {"OK": "✓", "SKIPPED": "–", "FAILED": "✗"}.get(step.status, "?")
             lines.append(

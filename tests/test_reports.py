@@ -42,7 +42,7 @@ class TestWeeklyReport:
 
     def test_markdown_renders(self, db, market):
         markdown = generate_weekly_report(db, persist=False).to_markdown()
-        assert markdown.startswith("# EGX ALPHA Weekly Investment Committee")
+        assert markdown.startswith("# GMG EGX Intelligence — Weekly Report")
         for i in range(1, 11):
             assert f"## {i}." in markdown
         assert "not investment advice" in markdown
@@ -278,4 +278,4 @@ class TestWeeklyPipeline:
         assert "Generate and store weekly report" in names
         assert "Recalculate scores" in names
         # Rendering must work whatever the outcome of individual steps.
-        assert "EGX ALPHA weekly run" in result.render()
+        assert "GMG weekly run" in result.render()

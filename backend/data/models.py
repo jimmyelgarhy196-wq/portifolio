@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM models for EGX ALPHA.
+"""SQLAlchemy ORM models for GMG Investment Intelligence.
 
 Provenance convention
 ---------------------
