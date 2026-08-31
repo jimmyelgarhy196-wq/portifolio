@@ -92,6 +92,7 @@ def get_db() -> Iterator[Session]:
 def init_database(drop_all: bool = False) -> None:
     """Create all tables. Import models first so metadata is populated."""
     from backend.data import models  # noqa: F401  (registers mappers)
+    from backend.data import saas_models  # noqa: F401  (accounts, billing, user data)
 
     engine = get_engine()
     if drop_all:

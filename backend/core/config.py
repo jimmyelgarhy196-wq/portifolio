@@ -1,4 +1,4 @@
-"""Central configuration for EGX ALPHA.
+"""Central configuration for GMG Investment Intelligence.
 
 All configuration arrives from three layers, later layers overriding earlier:
 
@@ -18,6 +18,12 @@ from typing import Any
 import yaml
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# --- Brand -----------------------------------------------------------------
+BRAND_COMPANY = "GMG AI Solutions"
+BRAND_PRODUCT = "GMG Investment Intelligence"
+BRAND_TAGLINE = "Investment Intelligence for the Egyptian Market"
+BRAND_SHORT = "GMG"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = PROJECT_ROOT / "config"
@@ -105,6 +111,56 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     notify_webhook_url: str = ""
 
+    # --- application / security -----------------------------------------------
+    #: Base URL used in verification and reset links sent by email.
+    base_url: str = "http://127.0.0.1:8000"
+    #: Signing key for sessions and one-time tokens. MUST be set in production.
+    auth_secret: str = ""
+    session_cookie: str = "gmg_session"
+    session_days: int = 14
+    #: Set true behind HTTPS so the session cookie is never sent in clear.
+    cookie_secure: bool = False
+    #: Argon2 parameters. Defaults follow the RFC 9106 low-memory profile.
+    argon2_time_cost: int = 3
+    argon2_memory_kib: int = 65536
+    argon2_parallelism: int = 4
+    #: Failed logins allowed per (email, IP) inside the window before lockout.
+    login_max_attempts: int = 8
+    login_window_minutes: int = 15
+    login_lockout_minutes: int = 20
+    #: Generic API rate limit, requests per minute per client.
+    rate_limit_per_minute: int = 120
+    require_email_verification: bool = True
+    admin_email: str = ""
+
+    # --- subscription / billing -----------------------------------------------
+    plan_code: str = "gmg_investment_intelligence"
+    plan_name: str = "GMG Investment Intelligence"
+    plan_price_egp: float = 300.0
+    plan_interval: str = "month"
+    trial_days: int = 7
+    #: manual | none  — "manual" records intent and waits for an admin/gateway
+    #: to confirm; there is no simulated card processing anywhere in this system.
+    payment_provider: str = "manual"
+    payment_api_key: str = ""
+    payment_webhook_secret: str = ""
+
+    # --- email ------------------------------------------------------------------
+    #: console | smtp | none
+    email_provider: str = "console"
+    email_api_key: str = ""
+    email_from: str = "no-reply@gmg-ai.example"
+    email_from_name: str = "GMG Investment Intelligence"
+
+    # --- market data ------------------------------------------------------------
+    market_data_api_key: str = ""
+    #: Minutes a quote may be delayed by the provider; surfaced in the UI.
+    quote_delay_minutes: int = 15
+    market_open_time: str = "10:00"
+    market_close_time: str = "14:30"
+    #: EGX trades Sunday-Thursday. 0=Mon .. 6=Sun.
+    market_trading_days: str = "6,0,1,2,3"
+
     # --- safety ---------------------------------------------------------------
     live_trading_enabled: bool = False
 
@@ -137,6 +193,43 @@ class Settings(BaseSettings):
     @property
     def is_sqlite(self) -> bool:
         return self.database_url.startswith("sqlite")
+
+    @property
+    def signing_key(self) -> str:
+        """Key for sessions and one-time tokens.
+
+        In production this must come from EGX_AUTH_SECRET. A development
+        fallback is derived so the app runs out of the box, but it is stable
+        only for this working directory and is refused in production.
+        """
+        if self.auth_secret:
+            return self.auth_secret
+        if self.env.lower() in ("production", "prod"):
+            raise RuntimeError(
+                "EGX_AUTH_SECRET must be set in production. Sessions and email "
+                "tokens are signed with it; without one every session is forgeable."
+            )
+        import hashlib
+
+        return hashlib.sha256(f"gmg-dev-{PROJECT_ROOT}".encode()).hexdigest()
+
+    @property
+    def trading_weekdays(self) -> set[int]:
+        out: set[int] = set()
+        for part in str(self.market_trading_days).split(","):
+            part = part.strip()
+            if part.isdigit():
+                out.add(int(part))
+        return out or {6, 0, 1, 2, 3}
+
+    @property
+    def payments_enabled(self) -> bool:
+        """Whether a real payment gateway is wired up.
+
+        False means checkout records intent only — no card is charged anywhere
+        in this codebase, and the UI says so.
+        """
+        return self.payment_provider not in ("", "none", "manual")
 
 
 @lru_cache(maxsize=1)
