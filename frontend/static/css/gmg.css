@@ -313,7 +313,12 @@ p { margin: 0 0 1em; }
 }
 .index-card .ix-change { font-family: var(--mono); font-size: 13px; font-weight: 650; margin-top: 2px; }
 .index-card .ix-meta { font-size: 10.5px; color: var(--text-faint); margin-top: 6px; line-height: 1.4; }
-.index-card .ix-spark { margin: 8px -16px 0; height: 46px; }
+.index-card .ix-spark-label {
+  margin-top: auto; padding-top: 8px;
+  font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.index-card .ix-spark { margin: 2px -16px 0; height: 46px; }
 .index-card .ix-spark canvas { display: block; width: 100%; height: 46px; }
 .index-card.na .ix-value { color: var(--text-faint); font-size: 18px; font-style: italic; }
 
@@ -753,7 +758,12 @@ input[type=checkbox] { width: auto; accent-color: var(--gold); }
   body { font-size: 13.5px; }
   .g2, .g4, .g6 { grid-template-columns: 1fr; }
   .app-topbar { gap: 10px; padding: 0 12px; }
-  .app-topbar .market-pill, .app-topbar .hide-sm { display: none; }
+  .app-topbar .market-pill { display: none; }
+  /* One global rule: anything marked hide-sm is gone on a phone. */
+  .hide-sm { display: none !important; }
+  .public-nav { padding: 12px 14px; gap: 12px; }
+  .public-nav .links { gap: 12px; }
+  .gmg-wordmark .sub { font-size: 8.5px; letter-spacing: .1em; }
   .page-title { font-size: 19px; }
   .index-card .ix-value { font-size: 22px; }
   .tbl th, .tbl td { padding: 7px 9px; }

@@ -1,262 +1,213 @@
-# EGX ALPHA
+# GMG Investment Intelligence
 
-**A personal, hedge-fund-style AI research and portfolio-management terminal for Egyptian Exchange (EGX) listed equities.**
-
-> ### ⚠ Paper trading and research only
-> This system does **not** connect to a broker and does **not** place trades. Every
-> position it manages is simulated. It is a research tool, not investment advice.
+**Investment Intelligence for the Egyptian Market** — a subscription research
+and analytics platform for equities listed on the Egyptian Exchange (EGX), by
+**GMG AI Solutions**.
 
 ---
 
-## What it does
+## What this is — and what it is not
 
-EGX ALPHA ingests EGX market data, financial statements, news and official disclosures,
-computes fundamental / technical / quantitative scores from that data, has AI analyst
-agents argue both sides of each idea, writes a durable investment thesis, sizes a paper
-position against explicit risk limits, and reports weekly like an investment committee.
+GMG Investment Intelligence provides market information, analytics and research
+commentary. It is **information and research only**.
 
-Nine analytical layers:
+**GMG AI Solutions does not:**
 
-| Layer | What it produces |
+- accept or hold client money
+- hold securities or act as a custodian
+- execute or route orders, or act as a broker
+- manage portfolios for clients
+- give personal investment advice
+- guarantee, promise or forecast any return
+
+GMG AI Solutions is **not licensed or registered** as a financial adviser,
+portfolio manager, securities brokerage or investment fund by the Egyptian
+Financial Regulatory Authority (FRA) or any other regulator, and makes no such
+claim. See [`LEGAL.md`](LEGAL.md) for the outstanding legal-review work that
+must be completed before the service is offered commercially.
+
+---
+
+## The rule the whole codebase is built around
+
+**No fabricated number is ever presented as a real one.**
+
+That single rule produces most of the architecture:
+
+| Situation | What the platform does |
 |---|---|
-| Fundamental analysis | Growth, profitability, balance-sheet, cash-flow and valuation ratios |
-| Technical analysis | 15 indicators, 10 signal detectors, trend/momentum state |
-| Quantitative analysis | Cross-sectional factor z-scores across the EGX universe |
-| News & events | Corporate actions, disclosures, earnings, sentiment |
-| Risk | Volatility, beta, drawdown, concentration, correlation, liquidity, gap risk |
-| Portfolio construction | Conviction- and volatility-aware sizing under hard limits |
-| Backtesting | Point-in-time simulation with structural look-ahead prevention |
-| AI research agents | Fundamental, Technical, Event, Bear analysts and a Portfolio Manager |
-| Weekly committee report | Ten-section investment committee memo, stored and diffable |
+| A price is unavailable | Shows `N/A — data unavailable`, never `0.00` |
+| A price is delayed | Shows `DELAYED` with the exact delay in minutes |
+| A price is a stored close | Shows `END OF DAY` with the bar's true age |
+| No real feed is connected | Shows `DEMO DATA — NOT REAL-TIME`, and never fires an alert |
+| A ratio's denominator is zero | Reports it unavailable, never infinity |
+| A score's inputs are too sparse | Withholds the score rather than defaulting it |
+| A rating rests on thin coverage | Withholds the rating, and says why |
+| Valuation methods disagree > 2.5× | Publishes the range and refuses a single figure |
+| A multiple is physically implausible | Withholds it with an explanation (units guard) |
+| A screener criterion can't be tested | Excludes the company and counts it as untested |
 
----
+An index level is only ever shown as **official** when a licensed feed supplies
+it. Otherwise the figure is a **constituent composite computed by GMG** and is
+labelled as such, with the number of constituents it covers.
 
-## The two rules this system is built around
-
-**1. It never invents a number.**
-Every stored datum carries `source`, `retrieved_at`, `data_period` and `confidence`.
-A missing input becomes `UNAVAILABLE` — a first-class value that propagates through
-arithmetic instead of silently becoming zero. Division by zero returns `UNAVAILABLE`,
-not infinity. Growth from a negative base returns `UNAVAILABLE`, not a misleading
-percentage. Stale data reduces recommendation confidence and says so on screen.
-
-**2. The AI never produces a score.**
-Every score is deterministic Python over stored data, returned with its full
-decomposition — inputs, normalisation, weight, contribution. The LLM writes narrative
-around numbers it is handed, and must tag every statement `FACT`, `CALCULATION`,
-`INFERENCE`, `OPINION` or `UNKNOWN`. Output containing a number absent from its evidence
-pack is rejected. **Without an API key the system still works end to end**, using a
-deterministic narrative engine.
+**TradingView is not a data source here.** It is not scraped, and no claim is
+made that it offers an unrestricted real-time market-data API.
 
 ---
 
 ## Quick start
 
 ```bash
-git clone <this-repo> && cd portifolio
-
-python3 -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-cp .env.example .env          # every credential is optional
+cp .env.example .env
+python -c "import secrets; print('EGX_AUTH_SECRET=' + secrets.token_urlsafe(48))" >> .env
 
-python scripts/init_db.py     # create schema + load the EGX universe
-python scripts/run_server.py  # http://127.0.0.1:8000
+python scripts/init_db.py            # create the schema
+python scripts/refresh_universe.py   # load the EGX universe
+python scripts/run_server.py         # http://127.0.0.1:8000
 ```
 
-The terminal opens with an empty portfolio and no market data — because none has been
-ingested yet. That is the honest default. See **Getting real data in** below.
+The first account you create becomes the administrator.
 
-### Trying it without any data source
+### Exploring it with demonstration data
 
-To explore the interface before wiring up a provider:
+With no market-data licence connected there is nothing real to show, so a demo
+dataset is provided. **Every figure it writes is fictional** and is stamped
+`SYNTHETIC_DEMO` so the platform labels it `DEMO DATA — NOT REAL-TIME`
+everywhere it appears.
 
 ```bash
-EGX_ALLOW_SYNTHETIC_DATA=true python scripts/seed_demo.py
-EGX_ALLOW_SYNTHETIC_DATA=true python scripts/run_server.py
+EGX_ALLOW_SYNTHETIC_DATA=true python scripts/seed_gmg_demo.py --reset
+python scripts/research.py            # compute scores across the universe
+python scripts/run_server.py
 ```
 
-This loads a **fictional** dataset. Every row is stamped `SYNTHETIC_DEMO`, a permanent
-red banner sits across every page, and reports refuse to generate without an explicit
-acknowledgement flag. It exists so the system can be demonstrated and tested offline.
-**Never act on anything it shows you.**
+Delete the database and ingest from a licensed provider before showing anything
+to a customer.
 
 ---
 
-## Getting real data in
+## What subscribers get
 
-Three routes, in order of reliability:
-
-### 1. CSV import — always works, no credentials
-Drop exported files into `data/manual/` and run `python scripts/ingest.py --provider csv`.
-Formats are documented in [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md). This is the
-recommended path for fundamentals, since free APIs cover EGX financial statements poorly.
-
-```
-data/manual/
-├── prices/COMI.csv           date,open,high,low,close,adjusted_close,volume
-├── fundamentals/COMI.csv     period,period_type,period_end,available_from,revenue,...
-├── news.csv                  ticker,title,source,url,publication_date,summary
-└── disclosures.csv           ticker,title,date,type,url,summary
-```
-
-### 2. Yahoo Finance — prices only, no credentials
-EGX tickers carry a `.CA` suffix (`COMI.CA`, `HRHO.CA`); the EGX30 index is `^CCSI`.
-
-```bash
-python scripts/ingest.py --provider yahoo --dataset prices --universe egx30
-```
-
-### 3. A commercial provider
-Implement the interface in `backend/data/providers/base.py` and register it. Slots for
-Refinitiv, Bloomberg and aggregator keys already exist in `.env.example`.
-
-> **Network note.** The environment this project was built in blocks outbound access to
-> all financial-data hosts, so live ingestion could not be exercised during development.
-> The HTTP providers are written against the real endpoints and are covered by
-> fixture-based tests; run `python scripts/ingest.py --dry-run` on your own machine to
-> confirm connectivity.
-
----
-
-## Using the terminal
-
-| Page | Purpose |
+| Area | Detail |
 |---|---|
-| **Dashboard** | Portfolio value, P&L, alpha vs EGX30, top opportunities, risk summary |
-| **Portfolio** | Positions, weights, P&L, thesis status per holding |
-| **Opportunities** | Ranked universe scan with configurable filters |
-| **Stocks** | Per-name page: chart, fundamentals, valuation, AI research, recommendation, sources |
-| **Watchlist** | Core / swing / short / special-situation lists with notes |
-| **Research** | Run agents on a name and read the tagged output |
-| **Theses** | Every thesis, its versions, and what changed week over week |
-| **Backtesting** | Run and compare strategies with full metrics |
-| **Paper Trading** | Execute simulated trades from recommendations |
-| **Risk** | Exposure, concentration, drawdown, limit breaches |
-| **Reports** | Weekly committee report history, search, compare, export |
-| **Model Evaluation** | How accurate the system's own past calls have been |
-| **Settings** | Capital, risk limits, score weights, providers, schedule |
+| **Market dashboard** | EGX 30 / 70 / 100 with constituent breadth, top gainers, top losers, most active by traded value, advancers vs decliners, total volume and market turnover |
+| **Stock page** | Ten tabs: Overview, Chart, Fundamentals, Financials, Valuation, Technicals, AI Research, News & Disclosures, Peers & Sector, Data & Sources |
+| **Charts** | Candlesticks with volume, 1M–MAX timeframes, SMA/EMA/Bollinger overlays, RSI and MACD panes, crosshair OHLC readout — drawn locally, no third-party charting service |
+| **Fundamental score** | Valuation, Quality, Growth, Profitability, Balance sheet, Cash flow, **Dividend** and Catalysts, each with its inputs, weight and explanation |
+| **Valuation** | Two-stage DCF you can re-run with your own assumptions, a discount-rate × terminal-growth sensitivity grid, and sector/own-history multiples |
+| **AI research** | Rating, confidence, investment horizon and category (fundamental / technical / hybrid), derived by fixed rules and withheld when coverage is thin |
+| **Screener** | 22 criteria across price, valuation, quality, growth, momentum and GMG scores, with saved screens |
+| **Workspace** | Unlimited watchlists, portfolio tracking with P/L and weights, price / RSI / moving-average alerts by email |
+| **Weekly report** | GMG EGX Intelligence, generated from stored data with its own provenance |
 
-### Command line
-
-```bash
-python scripts/init_db.py                     # create schema, load universe
-python scripts/ingest.py --dataset all        # run ingestion
-python scripts/research.py --ticker COMI      # run the agent pipeline on one name
-python scripts/backtest.py --strategy fundamental_long --start 2020-01-01
-python scripts/weekly_run.py                  # full weekly pipeline + report
-python scripts/run_server.py                  # start the terminal
-
-python scripts/ingest.py --dry-run            # check which providers are reachable
-python scripts/backtest.py --compare          # run every strategy over identical conditions
-python scripts/refresh_universe.py --from-csv egx30.csv   # reconcile against official EGX lists
-python scripts/gen_schema.py > database/SCHEMA.md         # regenerate schema docs
-```
-
----
-
-## Scoring
-
-**EGX ALPHA score (0–100)** = Fundamental 30% · Technical 20% · Quant 15% ·
-Catalysts 10% · Quality 10% · Risk 10% · Sentiment 5%
-
-**Fundamental (0–100)** = Valuation 25% · Quality 20% · Growth 15% · Profitability 15% ·
-Balance Sheet 10% · Cash Flow 10% · Catalysts 5%
-
-**Quant factors** = Momentum 25% · Value 20% · Quality 20% · Growth 15% · Liquidity 10% ·
-Volatility 10%
-
-All weights live in `config/weights.yaml` and are editable in Settings. Every score comes
-back with its decomposition — you can always see exactly which inputs produced it and how
-much each contributed. Sub-scores computed from insufficient data are flagged
-low-confidence and their weight is redistributed rather than assumed to be average.
-
----
-
-## Strategies
-
-- **Core Fundamental Long** (6–36+ months) — undervaluation, quality, balance sheet, cash flow
-- **Technical / Swing** (days–months) — breakouts, momentum, reversals, volume confirmation
-- **Special Situations** (event-driven) — M&A, restructuring, buybacks, capital actions
-- **Bearish / Short** — **paper short positions only**, never executed
-
----
-
-## Backtesting and look-ahead bias
-
-The backtester cannot see the future, because the data layer refuses to serve it.
-`PointInTimeDataView` is constructed with an `as_of` date and filters every query by it.
-Financial statements additionally respect `available_from` — a Q4 result stays invisible
-until the date it was actually published, not the date the period ended. The test suite
-includes a strategy that deliberately attempts to read ahead and asserts it gets nothing.
-
-Metrics: total return, CAGR, volatility, Sharpe, Sortino, max drawdown, Calmar, win rate,
-average winner/loser, profit factor, alpha, beta, turnover — all against EGX30.
-
----
-
-## Testing
-
-```bash
-pytest -q                          # 338 tests
-pytest tests/test_lookahead.py -v  # the ones that matter most
-```
-
-Covers financial calculations, technical indicators, scoring, position sizing, portfolio
-allocation, risk limits, backtest mechanics and metrics, ingestion edge cases
-(duplicates, gaps, holidays, malformed payloads, provider failures), agent output
-validation, report generation and every API endpoint — with dedicated suites for
-look-ahead bias, division by zero, missing data and period misalignment.
-
-Tests run against an in-memory database and make no network calls, so they are safe to
-run anywhere.
+Pricing: **EGP 300 per month**, with a 7-day free trial.
 
 ---
 
 ## Architecture
 
 ```
-backend/
-├── core/          config, logging, database, data-quality primitives
-├── data/          provider interfaces + implementations, ingestion, universe
-├── analytics/     fundamental, technical, quant, scoring engines
-├── research/      AI agents, evidence packs, thesis engine, memory
-├── portfolio/     paper trading, sizing, risk, attribution
-├── backtesting/   point-in-time views, engine, metrics, strategies
-├── reports/       weekly investment committee report
-├── jobs/          scheduler and weekly pipeline
-└── api/           FastAPI routers and page routes
-frontend/          Jinja2 templates, terminal CSS, dependency-free canvas charts
+Licensed market-data provider ─┐
+Stored end-of-day bars ────────┼──► Quote service ──► Quote cache ──► Pages / JSON API
+Demo provider (labelled) ──────┘         │
+                                          └─ provenance travels with every quote:
+                                             source · timestamp · delay · is_demo
 ```
 
-Dependencies flow one way: `api → {analytics, research, portfolio, backtesting, reports}
-→ data → core`. Analytics performs no I/O. Research computes no scores. The API holds no
-business logic.
+```
+backend/
+  core/          settings, database, logging, data-quality primitives (UNAVAILABLE, safe_div)
+  data/          ORM models (research + SaaS), providers, ingestion, universe
+  market/        quote providers, session state, index/mover/breadth aggregation
+  analytics/     fundamental, technical, quantitative, scoring, valuation, screener
+  research/      evidence packs, AI agents, thesis engine, rating derivation
+  portfolio/     sizing, paper trading, risk, attribution
+  backtesting/   point-in-time data access, metrics, strategies, engine
+  accounts/      password hashing, tokens, CSRF, registration, sessions
+  billing/       subscription lifecycle, payment-provider abstraction
+  notify/        email provider abstraction, user alerts
+  api/           app factory, auth dependencies, page and JSON routes
+frontend/
+  static/css/    gmg.css (design system), terminal.css (internal terminal)
+  static/js/     gmg.js (shell), gmg-chart.js (charting), gmg-stock.js
+  templates/gmg/ customer-facing pages, legal documents, admin panel
+```
 
-Stack: Python 3.11 · FastAPI · SQLAlchemy 2.0 · SQLite (PostgreSQL-ready) · pandas/numpy ·
-Jinja2 · no frontend build step, no external JS dependencies.
+### Security
 
-| Document | Contents |
-|---|---|
-| [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Architecture decisions and the rationale for each |
-| [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | CSV formats, provider contract, how to add a source |
-| [`database/SCHEMA.md`](database/SCHEMA.md) | Every table and column, generated from the models |
+- Passwords hashed with **Argon2id** (memory-hard); plaintext never logged or stored
+- Session tokens stored only as **SHA-256 digests**; cookies HMAC-signed, `HttpOnly`, `SameSite=Lax`, `Secure` in production
+- Changing a password bumps a **session epoch**, invalidating every existing session
+- **CSRF tokens derived from the session secret** on every state-changing form
+- Per-IP and per-account **rate limiting and lockout** on sign-in, sign-up and reset
+- Sign-in and reset responses **never reveal whether an account exists**
+- **Entitlement is decided server-side** before a premium template is rendered or a premium JSON payload is produced — editing frontend JavaScript unlocks nothing
+- Every user-owned query is scoped by `user_id`; guessing another user's id returns 404
+- `EGX_AUTH_SECRET` is **required in production**; the application refuses to start without it
+
+### Payments
+
+There is no card processing anywhere in this codebase and **no demo gateway**.
+A provider that flipped payments to `SUCCEEDED` on its own would leave a
+database indistinguishable from a real one. With no gateway connected, checkout
+records intent, states plainly that no card has been charged, and an
+administrator confirms the out-of-band payment — an action written to the audit
+log with their identity and the reference they entered.
+
+To connect a real Egyptian gateway, implement `PaymentProvider` in
+`backend/billing/payments.py`, register it, and set `EGX_PAYMENT_PROVIDER` and
+`EGX_PAYMENT_API_KEY`.
 
 ---
 
-## Security
+## Internal research terminal
 
-Secrets come from environment variables only. `.env` is git-ignored; `.env.example`
-documents every variable and commits no values. Notifications stay off unless explicitly
-configured. `EGX_LIVE_TRADING_ENABLED` exists as an auditable gate that defaults to
-`false` and is wired to no execution path — there is no broker integration in this
-codebase.
+The original research terminal — backtesting, paper trading, risk analytics,
+thesis management, model evaluation — is mounted at **`/terminal`** and is
+restricted to administrators. It is GMG's own tooling, not part of the
+subscription. It runs in paper mode only; there is no broker integration and no
+execution path anywhere in this repository.
+
+---
+
+## Testing
+
+```bash
+pytest                    # 473 tests
+pytest --cov=backend      # with coverage
+```
+
+The suite is written around the failure modes that matter: a licensed provider
+must refuse rather than silently downgrade to demo data; demo inputs must
+contaminate every aggregate they touch; an expired-but-`ACTIVE` subscription
+must be denied while a cancelled-but-paid one is honoured; premium markup must
+be **absent** from the HTML rather than hidden in it; and an alert must never
+fire on a generated price.
+
+---
+
+## Documentation
+
+| File | Contents |
+|---|---|
+| [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Architecture and build plan |
+| [`LEGAL.md`](LEGAL.md) | Regulatory position and the outstanding counsel review |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Production deployment and the go-live checklist |
+| [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | Connecting a licensed market-data provider |
+| [`database/SCHEMA.md`](database/SCHEMA.md) | Generated schema reference |
 
 ---
 
 ## Disclaimer
 
-EGX ALPHA is a personal research tool. Its output is generated by software and language
-models and may be incomplete or wrong. It is not investment advice, and nothing in it is
-a recommendation to buy or sell any security. Verify every figure against primary sources
-before acting on it.
+Investing in listed securities carries risk, including the loss of the capital
+invested. Past performance does not indicate future results. Nothing produced
+by this software is personal investment advice. Verify every figure against the
+company's own published financial statements and the Egyptian Exchange's
+official disclosures before acting on it.
+
+© GMG AI Solutions.

@@ -62,11 +62,15 @@
       {% endif %}
     </div>
 
+    {% if ix.series %}
+    <div class="ix-spark-label">{{ ix.series | length }}-session constituent trend</div>
     <div class="ix-spark">
-      {% if ix.series %}
-        <canvas data-spark="{{ ix.series | tojson }}"></canvas>
-      {% endif %}
+      <canvas data-spark="{{ ix.series | tojson }}"></canvas>
     </div>
+    {% else %}
+    <div class="ix-spark-label faint">No stored history to chart</div>
+    <div class="ix-spark"></div>
+    {% endif %}
   </div>
   {% endfor %}
 </div>

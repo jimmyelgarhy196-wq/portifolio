@@ -52,12 +52,28 @@ router = APIRouter(prefix="/api", tags=["api"])
 @router.get("/health")
 def health(db: Session = Depends(get_db)) -> dict[str, Any]:
     settings = get_settings()
+    from backend.billing.payments import payment_status
+    from backend.market.quotes import build_quote_provider
+    from backend.notify.email_service import email_status
+
+    provider = build_quote_provider(db)
     return {
         "status": "ok",
-        "mode": "PAPER_TRADING_RESEARCH_ONLY",
+        # What this deployment is permitted to do, stated positively.
+        "mode": "RESEARCH_AND_INFORMATION_ONLY",
         "live_trading": False,
+        "holds_client_funds": False,
+        "holds_securities": False,
+        "executes_trades": False,
         "ai_enabled": settings.ai_enabled,
         "synthetic_data": uses_synthetic_data(db),
+        "quote_provider": {
+            "name": provider.name,
+            "is_demo": provider.is_demo,
+            "delayed_minutes": provider.delayed_minutes,
+        },
+        "email_provider": email_status()["provider"],
+        "payments_enabled": payment_status()["processes_payments"],
         "universe": universe_status(db).to_dict(),
         "companies": db.scalar(select(func.count()).select_from(Company)) or 0,
     }

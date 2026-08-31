@@ -218,10 +218,19 @@ def create_watchlist(
 ):
     enforce_csrf(request, csrf_token)
     name = (name or "").strip()[:96]
-    if name:
-        db.add(UserWatchlist(user_id=viewer.user.id, name=name))
-        db.commit()
-    return RedirectResponse("/watchlists", status_code=303)
+    if not name:
+        return RedirectResponse("/watchlists?msg=watchlist_name_required", status_code=303)
+
+    # Watchlist names are unique per user. Check first so a repeated name is a
+    # message, not a 500.
+    existing = db.scalar(select(UserWatchlist).where(
+        UserWatchlist.user_id == viewer.user.id, UserWatchlist.name == name))
+    if existing is not None:
+        return RedirectResponse("/watchlists?msg=watchlist_exists", status_code=303)
+
+    db.add(UserWatchlist(user_id=viewer.user.id, name=name))
+    db.commit()
+    return RedirectResponse("/watchlists?msg=watchlist_created", status_code=303)
 
 
 def _own_watchlist(db: Session, viewer: Viewer, watchlist_id: int) -> UserWatchlist:

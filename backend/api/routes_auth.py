@@ -68,6 +68,16 @@ FLASH: dict[str, tuple[str, str]] = {
     "checkout_pending": ("info", "Your subscription request has been recorded. No card has been charged."),
     "login_required": ("info", "Please sign in to continue."),
     "sessions_revoked": ("ok", "All other sessions have been signed out."),
+    "watchlist_created": ("ok", "Watchlist created."),
+    "watchlist_exists": ("error", "You already have a watchlist with that name."),
+    "watchlist_name_required": ("error", "Give the watchlist a name."),
+    "invalid_position": ("error",
+                         "Enter a positive number of shares and a positive purchase price."),
+    "alert_needs_threshold": ("error", "That alert condition needs a threshold value."),
+    "payment_confirmed": ("ok", "Payment confirmed and the subscription activated."),
+    "already_confirmed": ("info", "That payment was already confirmed."),
+    "self_change_blocked": ("error",
+                            "You cannot change your own role or account status."),
 }
 
 

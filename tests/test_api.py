@@ -98,11 +98,20 @@ def admin_client(client):
 
 
 class TestHealth:
-    def test_health_declares_paper_only(self, client):
+    def test_health_declares_research_only(self, client):
         payload = client.get("/api/health").json()
         assert payload["status"] == "ok"
-        assert payload["mode"] == "PAPER_TRADING_RESEARCH_ONLY"
+        assert payload["mode"] == "RESEARCH_AND_INFORMATION_ONLY"
+        # The four things GMG must never do, asserted rather than assumed.
         assert payload["live_trading"] is False
+        assert payload["holds_client_funds"] is False
+        assert payload["holds_securities"] is False
+        assert payload["executes_trades"] is False
+
+    def test_health_reports_the_real_quote_provider(self, client):
+        payload = client.get("/api/health").json()
+        assert "quote_provider" in payload
+        assert set(payload["quote_provider"]) == {"name", "is_demo", "delayed_minutes"}
 
     def test_universe_reports_verification_state(self, client):
         payload = client.get("/api/universe").json()

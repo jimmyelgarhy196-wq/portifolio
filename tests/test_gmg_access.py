@@ -244,6 +244,74 @@ class TestCsrf:
         assert "Core" in app_client.get("/watchlists").text
 
 
+class TestDuplicateNames:
+    """Unique constraints must surface as messages, never as a 500."""
+
+    def _csrf(self, client, path="/watchlists"):
+        import re
+
+        return re.search(
+            r'name="csrf_token" value="([^"]+)"', client.get(path).text).group(1)
+
+    def test_repeating_a_watchlist_name_is_refused_politely(self, app_client):
+        sign_in(app_client, make_user(app_client, "dup@example.com"))
+        csrf = self._csrf(app_client)
+        first = app_client.post("/watchlists/create",
+                                data={"name": "Core", "csrf_token": csrf},
+                                follow_redirects=False)
+        assert first.status_code == 303
+        second = app_client.post("/watchlists/create",
+                                 data={"name": "Core", "csrf_token": csrf},
+                                 follow_redirects=False)
+        assert second.status_code == 303, "a repeated name must not raise"
+        assert "watchlist_exists" in second.headers["location"]
+        assert "already have a watchlist with that name" in app_client.get(
+            "/watchlists?msg=watchlist_exists").text
+
+    def test_an_empty_watchlist_name_is_refused(self, app_client):
+        sign_in(app_client, make_user(app_client, "dup2@example.com"))
+        response = app_client.post(
+            "/watchlists/create", data={"name": "   ", "csrf_token": self._csrf(app_client)},
+            follow_redirects=False)
+        assert response.status_code == 303
+        assert "watchlist_name_required" in response.headers["location"]
+
+    def test_adding_the_same_ticker_twice_toggles_it_off(self, app_client):
+        sign_in(app_client, make_user(app_client, "dup3@example.com"))
+        csrf = self._csrf(app_client)
+        app_client.post("/watchlists/create", data={"name": "Core", "csrf_token": csrf})
+        db = app_client.session_factory()
+        watchlist_id = db.query(saas_models.UserWatchlist).one().id
+        db.close()
+
+        for _ in range(2):
+            response = app_client.post(
+                f"/watchlists/{watchlist_id}/toggle",
+                data={"ticker": "TEST", "csrf_token": csrf}, follow_redirects=False)
+            assert response.status_code == 303
+
+        db = app_client.session_factory()
+        assert db.query(saas_models.UserWatchlistItem).count() == 0
+        db.close()
+
+    def test_saving_a_screen_twice_updates_it(self, app_client):
+        sign_in(app_client, make_user(
+            app_client, "dup4@example.com", status=SubscriptionStatus.ACTIVE.value))
+        csrf = self._csrf(app_client, "/screener")
+        for payload in ('{"criteria": []}', '{"criteria": [{"key": "pe", "op": "lte", "value": 10}]}'):
+            response = app_client.post(
+                "/screener/save",
+                data={"name": "Cheap", "payload": payload, "csrf_token": csrf},
+                follow_redirects=False)
+            assert response.status_code == 303
+
+        db = app_client.session_factory()
+        screens = db.query(saas_models.SavedScreen).all()
+        assert len(screens) == 1
+        assert screens[0].filters["criteria"], "the second save must update, not duplicate"
+        db.close()
+
+
 class TestUserDataIsolation:
     def test_one_user_cannot_reach_another_users_watchlist(self, app_client):
         import re
