@@ -1,0 +1,61 @@
+{% extends "gmg/legal/_base.html" %}
+{% block document %}
+<div class="callout risk">
+  <strong>You can lose money.</strong> The value of listed securities can fall as well as rise,
+  and you may get back less than you invested — including nothing at all.
+</div>
+
+<h2>1. General market risk</h2>
+<p>Share prices move for reasons that no analysis can fully anticipate: company performance,
+sector conditions, macroeconomic changes, policy decisions, sentiment, and events with no
+warning. A well-researched position can still lose money.</p>
+
+<h2>2. Risks specific to the Egyptian market</h2>
+<ul>
+  <li><strong>Currency.</strong> The Egyptian pound has experienced significant devaluations.
+      Returns measured in EGP may look very different measured in another currency.</li>
+  <li><strong>Inflation and interest rates.</strong> High and variable inflation and policy
+      rates affect both company earnings and the discount rate applied to them. A valuation
+      model is highly sensitive to these inputs.</li>
+  <li><strong>Liquidity.</strong> Many EGX-listed companies trade thinly. You may not be able
+      to buy or sell the quantity you want at the price you see, and a quoted price may not be
+      achievable.</li>
+  <li><strong>Concentration.</strong> A small number of large constituents can dominate index
+      moves, so an index level may not describe the typical stock.</li>
+  <li><strong>Disclosure and reporting.</strong> Reporting timeliness and detail vary between
+      issuers. Some data is simply not available, and where that is the case we say so.</li>
+  <li><strong>Trading halts and regulatory action.</strong> Trading in a security can be
+      suspended, sometimes for extended periods, during which you cannot exit a position.</li>
+</ul>
+
+<h2>3. Risks of the analysis itself</h2>
+<ul>
+  <li><strong>Model risk.</strong> A discounted cash flow model rests on assumptions about
+      growth, margins and the discount rate. Small changes in those assumptions produce very
+      different values. We publish a sensitivity grid for exactly this reason.</li>
+  <li><strong>Data risk.</strong> Analytics are only as good as the data behind them. Where
+      data is missing, a score is withheld or its coverage is reduced, and we state this.</li>
+  <li><strong>Backward-looking indicators.</strong> Technical indicators describe past price
+      behaviour. They do not predict future prices.</li>
+  <li><strong>AI limitations.</strong> AI-assisted commentary can be incomplete or wrong even
+      when constrained to available data.</li>
+</ul>
+
+<h2>4. Leverage and margin</h2>
+<p>{{ brand.company }} does not offer leverage, margin or any credit facility. If you use
+borrowed money to invest through a broker, your losses can exceed the amount you invested.
+That risk is between you and your broker.</p>
+
+<h2>5. Diversification is not protection</h2>
+<p>Spreading investments reduces some risks but does not eliminate them. In a broad market
+decline, diversified portfolios fall too.</p>
+
+<h2>6. Before you invest</h2>
+<ul>
+  <li>Understand what the company does and how it makes money.</li>
+  <li>Read the company's own financial statements and EGX disclosures.</li>
+  <li>Decide in advance what would tell you the thesis was wrong.</li>
+  <li>Consider independent professional advice.</li>
+  <li>Only invest money you can afford to lose entirely.</li>
+</ul>
+{% endblock %}

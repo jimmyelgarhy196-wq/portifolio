@@ -293,6 +293,21 @@ This is a notification that a condition you configured was met. It is not a
 recommendation to buy or sell."""),
         )
 
+    if template == "contact_message":
+        return (
+            f"Website enquiry: {ctx.get('subject', 'no subject')}",
+            _wrap(f"""A message was sent through the {BRAND_PRODUCT} contact form.
+
+From:    {ctx.get('name', 'not given')}
+Email:   {ctx.get('from_email', 'not given')}
+Subject: {ctx.get('subject', 'not given')}
+
+{ctx.get('message', '')}
+
+Reply to the sender directly at the address above. Treat the content as
+unverified: it was submitted by a member of the public."""),
+        )
+
     return (ctx.get("subject", BRAND_PRODUCT), _wrap(ctx.get("body", "")))
 
 

@@ -19,12 +19,13 @@ alpha:
 # --- Fundamental score -------------------------------------------------------
 fundamental:
   valuation:      25
-  quality:        20
-  growth:         15
-  profitability:  15
+  quality:        18
+  growth:         14
+  profitability:  14
   balance_sheet:  10
   cash_flow:      10
-  catalysts:       5
+  dividend:        5
+  catalysts:       4
 
 # --- Quantitative factor model ----------------------------------------------
 quant:

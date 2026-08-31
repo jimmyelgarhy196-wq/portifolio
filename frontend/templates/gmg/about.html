@@ -1,0 +1,40 @@
+{% extends "gmg/public.html" %}
+{% block title %}About {{ brand.company }}{% endblock %}
+
+{% block body %}
+<section class="section">
+  <div class="section-narrow" style="max-width:760px">
+    <h1>About {{ brand.company }}</h1>
+    <p class="lede" style="text-align:left;margin-left:0">
+      {{ brand.company }} builds research technology for the Egyptian Exchange.
+      {{ brand.product }} is our subscription platform for investors who want the analysis
+      an institution would run, with the honesty about data that retail tools rarely offer.
+    </p>
+
+    <h2>What we believe</h2>
+    <p>Most investment tools fail their users in the same way: they present a number without
+    saying where it came from, how old it is, or whether it was measured at all. A price with
+    no timestamp, a ratio computed from a statement that was never filed, a "fair value" with
+    hidden assumptions — each of these is worse than no number, because it invites a decision
+    built on nothing.</p>
+    <p>So {{ brand.product }} is built the other way round. Every price carries its source and
+    its delay. Every score shows its components and the weight each carried. Every missing
+    figure says <em>N/A — data unavailable</em> rather than defaulting to zero. Every valuation
+    shows the assumptions you can change. Where our AI writes commentary, it is separated from
+    the figures and constrained to what the data supports.</p>
+
+    <h2>What we are not</h2>
+    <p>{{ brand.company }} is a technology and research company. We do not accept or hold
+    client money. We do not hold securities. We do not execute trades, manage portfolios, or
+    give personal investment advice. We are not licensed or registered as a financial adviser,
+    portfolio manager, brokerage or investment fund by the Egyptian Financial Regulatory
+    Authority or any other regulator, and we make no claim to be.</p>
+    <p>What you do with our research is your decision and your responsibility. We think you
+    are better served by a tool that says clearly what it does not know.</p>
+
+    <h2>Get in touch</h2>
+    <p>Questions about the platform, the data, or your subscription:
+    <a href="/contact">contact us</a>.</p>
+  </div>
+</section>
+{% endblock %}

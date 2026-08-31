@@ -1,0 +1,14 @@
+{% extends "gmg/auth.html" %}
+{% block title %}Check your email{% endblock %}
+{% block content %}
+<h1>Check your email</h1>
+<p class="sub">
+  If that address can be registered, we have sent a verification link to it. Click the link
+  to activate your {{ brand.product }} account.
+</p>
+<div class="callout">
+  <p class="mb-0">The link expires in 48 hours. If it does not arrive, check your spam folder,
+  then request a new one from the sign-in page.</p>
+</div>
+<a class="btn btn-primary btn-block" href="/login">Go to sign in</a>
+{% endblock %}

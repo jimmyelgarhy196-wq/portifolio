@@ -1,0 +1,20 @@
+{% macro logo(size='') -%}
+<a class="gmg-logo" href="{{ '/market' if viewer and viewer.is_authenticated else '/' }}">
+  <span class="gmg-mark {{ size }}">GMG</span>
+  <span class="gmg-wordmark">
+    <span class="name">GMG</span>
+    <span class="sub">Investment Intelligence</span>
+  </span>
+</a>
+{%- endmacro %}
+
+{% macro data_badge(badge) -%}
+<span class="badge {{ badge | badge_class }}">{{ badge }}</span>
+{%- endmacro %}
+
+{% macro change(value, pct=none) -%}
+{% if value is none %}<span class="na">N/A</span>{% else %}
+<span class="chg {{ value | direction_class }}">{{ value | fmt_num(2) }}{% if pct is not none %}
+  ({{ pct | fmt_pct(2, 'N/A', true) }}){% endif %}</span>
+{% endif %}
+{%- endmacro %}

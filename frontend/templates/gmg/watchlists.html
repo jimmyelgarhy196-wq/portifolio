@@ -1,0 +1,80 @@
+{% extends "gmg/app.html" %}
+{% block title %}Watchlists{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Watchlists</h1>
+    <p class="page-sub">{{ lists | length }} lists · add companies from any stock page</p>
+  </div>
+  <form method="post" action="/watchlists/create" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="text" name="name" placeholder="New watchlist name" style="width:220px" required>
+    <button class="btn btn-primary" type="submit">Create</button>
+  </form>
+</div>
+
+{% if not lists %}
+<div class="card"><div class="empty">
+  <span class="ico">★</span>
+  You have no watchlists yet. Create one above, then add companies from any stock page.
+</div></div>
+{% endif %}
+
+{% for wl in lists %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">{{ wl.name }}</h2>
+    <span class="card-meta">{{ wl.items | length }} companies</span>
+    <form method="post" action="/watchlists/{{ wl.id }}/delete"
+          data-confirm="Delete the watchlist “{{ wl.name }}”?" style="margin-left:10px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-sm btn-danger" type="submit">Delete list</button>
+    </form>
+  </div>
+  <div class="card-body flush">
+    {% if wl.items %}
+    <div class="tbl-scroll">
+      <table class="tbl compact">
+        <thead><tr>
+          <th>Ticker</th><th class="hide-sm">Company</th>
+          <th class="num">Price</th><th class="num">Change</th>
+          <th class="num hide-sm">Volume</th><th class="hide-sm">Data</th><th>Added</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for item in wl.items %}
+        {% set q = quotes.get(item.ticker) %}
+        <tr>
+          <td><a class="tk" href="/stock/{{ item.ticker }}">{{ item.ticker }}</a></td>
+          <td class="nm hide-sm">{{ names.get(item.ticker, '—') }}</td>
+          <td class="num">{{ q.price | fmt_price('') if q else 'N/A' }}</td>
+          <td class="num">
+            {% if q and q.change_pct is not none %}
+            <span class="chg {{ q.change_pct | direction_class }}">{{ q.change_pct | fmt_pct(2, 'N/A', true) }}</span>
+            {% else %}<span class="na">N/A</span>{% endif %}
+          </td>
+          <td class="num hide-sm">{{ q.volume | fmt_compact if q else '—' }}</td>
+          <td class="hide-sm">
+            {% if freshness.get(item.ticker) %}
+            <span class="badge {{ freshness[item.ticker].badge | badge_class }}">{{ freshness[item.ticker].badge }}</span>
+            {% endif %}
+          </td>
+          <td class="text-xs faint">{{ item.added_at | fmt_date }}</td>
+          <td>
+            <form method="post" action="/watchlists/{{ wl.id }}/toggle">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="ticker" value="{{ item.ticker }}">
+              <button class="btn btn-sm btn-ghost" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">This list is empty. Open any stock page and add it from the sidebar.</div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

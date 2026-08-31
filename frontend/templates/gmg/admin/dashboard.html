@@ -1,0 +1,118 @@
+{% extends "gmg/app.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Administration</h1>
+    <p class="page-sub">{{ brand.company }} operations overview</p>
+  </div>
+  <div class="row wrap">
+    <a class="btn btn-sm" href="/admin/users">Users</a>
+    <a class="btn btn-sm" href="/admin/subscriptions">Subscriptions</a>
+    <a class="btn btn-sm" href="/admin/data">Data</a>
+    <a class="btn btn-sm" href="/admin/emails">Emails</a>
+    <a class="btn btn-sm" href="/admin/audit">Audit</a>
+  </div>
+</div>
+
+<div class="tiles g4 mb-16">
+  <div class="tile"><div class="k">Users</div><div class="v">{{ counts.users }}</div>
+    <div class="s">{{ counts.users_7d }} in the last 7 days</div></div>
+  <div class="tile"><div class="k">Email verified</div><div class="v">{{ counts.verified }}</div>
+    <div class="s">of {{ counts.users }} accounts</div></div>
+  <div class="tile"><div class="k">Paying subscribers</div><div class="v">{{ metrics.paying }}</div>
+    <div class="s">{{ metrics.trialing }} on trial</div></div>
+  <div class="tile"><div class="k">MRR</div><div class="v sm">EGP {{ metrics.mrr_egp | fmt_num(0) }}</div>
+    <div class="s">paying subscriptions only</div></div>
+</div>
+
+<div class="tiles g4 mb-16">
+  <div class="tile"><div class="k">Companies</div><div class="v sm">{{ counts.companies }}</div></div>
+  <div class="tile"><div class="k">Price bars</div><div class="v sm">{{ counts.price_bars | fmt_compact }}</div></div>
+  <div class="tile"><div class="k">Cached quotes</div><div class="v sm">{{ counts.quotes }}</div>
+    {% if counts.demo_quotes %}<div class="s down">{{ counts.demo_quotes }} are demo data</div>{% endif %}</div>
+  <div class="tile"><div class="k">Emails (7d)</div><div class="v sm">{{ counts.emails_7d }}</div>
+    {% if counts.emails_failed_7d %}<div class="s down">{{ counts.emails_failed_7d }} failed</div>{% endif %}</div>
+</div>
+
+{% if metrics.note %}
+<div class="callout warn">{{ metrics.note }}</div>
+{% endif %}
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Quote providers</h2>
+      <a class="card-meta" href="/admin/data">Data panel →</a></div>
+    <div class="card-body flush">
+      <table class="tbl compact">
+        <thead><tr><th>Provider</th><th>Status</th><th class="num">Delay</th></tr></thead>
+        <tbody>
+        {% for p in providers %}
+        <tr>
+          <td>{{ p.name }}<div class="text-xs faint">{{ p.note[:90] }}</div></td>
+          <td>{% if p.is_demo %}<span class="badge badge-demo">Demo</span>
+              {% elif p.available %}<span class="badge badge-live">Available</span>
+              {% else %}<span class="badge badge-none">Not configured</span>{% endif %}</td>
+          <td class="num">{{ p.delay }}m</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Services</h2></div>
+    <div class="card-body">
+      <dl class="kv">
+        <dt>Email provider</dt><dd>{{ email.provider }}</dd>
+        <dt>Email configured</dt><dd>{{ 'Yes' if email.configured else 'No' }}</dd>
+        <dt>Payment provider</dt><dd>{{ payments.display_name }}</dd>
+        <dt>Processes payments</dt><dd>{{ 'Yes' if payments.processes_payments else 'No' }}</dd>
+      </dl>
+      <p class="text-xs faint mt-16 mb-0">{{ payments.note }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Newest accounts</h2>
+      <a class="card-meta" href="/admin/users">All users →</a></div>
+    <div class="card-body flush">
+      <table class="tbl compact">
+        <tbody>
+        {% for u in recent_users %}
+        <tr>
+          <td><a href="/admin/users/{{ u.id }}">{{ u.email }}</a></td>
+          <td class="text-xs faint">{{ u.created_at | fmt_date }}</td>
+          <td>{% if u.email_verified %}<span class="badge badge-live">Verified</span>
+              {% else %}<span class="badge badge-delayed">Unverified</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Recent audit events</h2>
+      <a class="card-meta" href="/admin/audit">Full log →</a></div>
+    <div class="card-body flush">
+      <div class="tbl-scroll tall">
+        <table class="tbl compact">
+          <tbody>
+          {% for e in recent_audit %}
+          <tr>
+            <td class="faint nowrap text-xs">{{ e.created_at | fmt_dt }}</td>
+            <td class="text-xs">{{ e.action | replace('_', ' ') }}</td>
+            <td class="text-xs faint">{{ e.actor_email or e.target or '' }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

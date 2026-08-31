@@ -1,0 +1,127 @@
+{% set a = analysis %}
+<div class="callout gold">
+  <strong>How to read this.</strong> The rating, confidence, horizon and category below are
+  computed by fixed rules from GMG's scores — the same inputs always produce the same
+  labels. The written commentary is generated and clearly separated from the figures.
+  None of it is personal investment advice, and GMG does not issue price targets.
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">GMG <span class="accent">research view</span></h2>
+    <span class="card-meta">as of {{ a.as_of | fmt_date }}</span></div>
+  <div class="card-body">
+    {% if rating.available %}
+    <div class="tiles g4 mb-16">
+      <div class="tile">
+        <div class="k">Rating</div>
+        <div class="mt-8"><span class="rating {{ rating.code | rating_class }}">{{ rating.label }}</span></div>
+        <div class="s">score {{ rating.score | fmt_num(0) }}/100</div>
+      </div>
+      <div class="tile">
+        <div class="k">Confidence</div>
+        <div class="v sm">{{ rating.confidence_label }}</div>
+        <div class="s">based on data coverage and freshness</div>
+      </div>
+      <div class="tile">
+        <div class="k">Investment horizon</div>
+        <div class="v sm">{{ rating.horizon_label }}</div>
+        <div class="s">{{ rating.horizon_window }}</div>
+      </div>
+      <div class="tile">
+        <div class="k">Category</div>
+        <div class="v sm">{{ rating.category_label }}</div>
+        <div class="s">{{ rating.category_note }}</div>
+      </div>
+    </div>
+
+    <h3>Why this rating</h3>
+    <ul class="text-sm dim">
+      {% for reason in rating.reasons %}<li>{{ reason }}</li>{% endfor %}
+    </ul>
+
+    {% if rating.caveats %}
+    <div class="callout warn">
+      <strong>Limits on this rating</strong>
+      <ul class="mb-0 text-sm">
+        {% for caveat in rating.caveats %}<li>{{ caveat }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="na mb-0">{{ rating.unavailable_reason }}</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if thesis %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Investment <span class="accent">thesis</span></h2>
+    <span class="card-meta">{{ thesis.reference }} · updated {{ thesis.updated_at | fmt_dt }}</span>
+  </div>
+  <div class="card-body">
+    <div class="tiles g4 mb-16">
+      <div class="tile"><div class="k">Direction</div><div class="v sm">{{ thesis.direction }}</div></div>
+      <div class="tile"><div class="k">Strategy</div><div class="v sm">{{ thesis.strategy | replace('_', ' ') | title }}</div></div>
+      <div class="tile"><div class="k">Conviction</div><div class="v sm">{{ thesis.conviction | fmt_num(1, 'N/A') }}/10</div></div>
+      <div class="tile"><div class="k">Expected holding period</div>
+        <div class="v sm">{{ thesis.expected_holding_period or 'N/A' }}</div></div>
+    </div>
+
+    {% if thesis.thesis_text %}
+    <h3>Thesis</h3>
+    <p class="text-sm dim">{{ thesis.thesis_text }}</p>
+    {% endif %}
+
+    <div class="grid g2">
+      <div>
+        <h3 class="up">Bull case</h3>
+        <p class="text-sm dim">{{ thesis.bull_case or 'N/A — not generated.' }}</p>
+      </div>
+      <div>
+        <h3 class="down">Bear case</h3>
+        <p class="text-sm dim">{{ thesis.bear_case or 'N/A — not generated.' }}</p>
+      </div>
+    </div>
+
+    <div class="grid g2 mt-16">
+      <div>
+        <h3>Catalysts</h3>
+        {% if thesis.catalysts %}
+        <ul class="text-sm dim">{% for c in thesis.catalysts %}<li>{{ c }}</li>{% endfor %}</ul>
+        {% else %}<p class="na">None recorded.</p>{% endif %}
+      </div>
+      <div>
+        <h3>Risks</h3>
+        {% if thesis.risks %}
+        <ul class="text-sm dim">{% for r in thesis.risks %}<li>{{ r }}</li>{% endfor %}</ul>
+        {% else %}<p class="na">None recorded.</p>{% endif %}
+      </div>
+    </div>
+
+    {% if thesis.invalidation_conditions %}
+    <h3 class="mt-16">What would prove this wrong</h3>
+    <ul class="text-sm dim">
+      {% for cond in thesis.invalidation_conditions %}<li>{{ cond }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  {% if thesis.data_sources %}
+  <div class="card-foot">
+    Sources: {% for src in thesis.data_sources %}{{ src }}{% if not loop.last %} · {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="empty">
+  No written research has been generated for {{ ticker }} yet. The rating above is computed
+  from the scores and does not require a written thesis.
+</div></div>
+{% endif %}
+
+<div class="disclaimer-strip">
+  <strong>Not investment advice.</strong> {{ brand.company }} publishes research and analysis
+  for information only. It does not know your circumstances, objectives or risk tolerance,
+  and nothing here is a recommendation to you personally. No return is promised or
+  guaranteed. You may lose money.
+</div>

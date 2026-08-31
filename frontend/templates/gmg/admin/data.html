@@ -1,0 +1,104 @@
+{% extends "gmg/app.html" %}
+{% block title %}Admin · Data{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow"><h1 class="page-title">Data sources &amp; cache</h1></div>
+  <div class="row">
+    <form method="post" action="/admin/data/refresh-quotes">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-sm btn-primary" type="submit">Refresh quote cache</button>
+    </form>
+    <a class="btn btn-sm btn-ghost" href="/admin">Back to admin</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Quote provider chain</h2></div>
+  <div class="card-body flush">
+    <table class="tbl compact">
+      <thead><tr><th>Provider</th><th>Status</th><th class="num">Delay</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for p in providers %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td>{% if p.is_demo %}<span class="badge badge-demo">Demo data</span>
+            {% elif p.available %}<span class="badge badge-live">Available</span>
+            {% else %}<span class="badge badge-none">Not configured</span>{% endif %}</td>
+        <td class="num">{{ p.delay }}m</td>
+        <td class="text-xs faint">{{ p.note }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Stored price bars by source</h2></div>
+    <div class="card-body flush">
+      {% if bar_sources %}
+      <table class="tbl compact">
+        <thead><tr><th>Source</th><th class="num">Bars</th><th>Latest</th></tr></thead>
+        <tbody>
+        {% for source, count, latest in bar_sources %}
+        <tr>
+          <td>{{ source or 'unrecorded' }}
+            {% if source and 'SYNTHETIC' in source | upper %}<span class="badge badge-demo">Generated</span>{% endif %}</td>
+          <td class="num">{{ count | fmt_compact }}</td>
+          <td class="text-xs">{{ latest | fmt_date }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<div class="empty">No price bars stored.</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Source health</h2></div>
+    <div class="card-body flush">
+      {% if sources %}
+      <table class="tbl compact">
+        <thead><tr><th>Source</th><th>Last success</th><th>Last error</th></tr></thead>
+        <tbody>
+        {% for r in sources %}
+        <tr>
+          <td>{{ r.name }}{% if r.is_demo %} <span class="badge badge-demo">Demo</span>{% endif %}</td>
+          <td class="text-xs">{{ r.last_success_at | fmt_dt('%d %b %H:%M', 'never') }}</td>
+          <td class="text-xs faint">{{ (r.last_error or '—')[:60] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<div class="empty">No source health recorded yet.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Quote cache</h2>
+    <span class="card-meta">{{ quotes | length }} rows</span></div>
+  <div class="card-body flush">
+    <div class="tbl-scroll tall">
+      <table class="tbl compact">
+        <thead><tr><th>Ticker</th><th class="num">Price</th><th class="num">Change</th>
+          <th>Source</th><th class="num">Delay</th><th>Retrieved</th><th>Demo</th></tr></thead>
+        <tbody>
+        {% for q in quotes %}
+        <tr>
+          <td class="mono">{{ q.ticker }}</td>
+          <td class="num">{{ q.price | fmt_num(2, 'N/A') }}</td>
+          <td class="num {{ q.change_pct | direction_class }}">{{ q.change_pct | fmt_pct(2, 'N/A', true) }}</td>
+          <td class="text-xs faint">{{ q.source }}</td>
+          <td class="num">{{ q.delayed_minutes }}m</td>
+          <td class="text-xs faint">{{ q.retrieved_at | fmt_dt }}</td>
+          <td>{% if q.is_demo %}<span class="badge badge-demo">Demo</span>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

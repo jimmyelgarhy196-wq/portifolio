@@ -1,0 +1,60 @@
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">News</h2>
+      <span class="card-meta">{{ news | length }} items stored</span></div>
+    <div class="card-body flush">
+      {% if news %}
+      <table class="tbl compact">
+        <tbody>
+        {% for item in news %}
+        <tr>
+          <td class="faint nowrap" style="width:92px">{{ item.publication_date | fmt_date }}</td>
+          <td>
+            {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.headline }}</a>
+            {% else %}{{ item.headline }}{% endif %}
+            <div class="text-xs faint">
+              {{ item.source or 'Source not recorded' }}
+              {% if item.sentiment is not none %}· sentiment {{ item.sentiment | fmt_num(2) }}{% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">N/A — no news items are stored for {{ ticker }}.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">EGX disclosures</h2>
+      <span class="card-meta">{{ disclosures | length }} items stored</span></div>
+    <div class="card-body flush">
+      {% if disclosures %}
+      <table class="tbl compact">
+        <tbody>
+        {% for d in disclosures %}
+        <tr>
+          <td class="faint nowrap" style="width:92px">{{ d.date | fmt_date }}</td>
+          <td>
+            {% if d.url %}<a href="{{ d.url }}" target="_blank" rel="noopener noreferrer">{{ d.title }}</a>
+            {% else %}{{ d.title }}{% endif %}
+            <div class="text-xs faint">{{ d.category or 'Uncategorised' }} · {{ d.source or 'Source not recorded' }}</div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">N/A — no disclosures are stored for {{ ticker }}.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  GMG stores news and disclosure records with the source they came from. Headlines are
+  reproduced as published; GMG does not rewrite them and does not generate news.
+  The Egyptian Exchange's own disclosure portal remains the authoritative record.
+</div>

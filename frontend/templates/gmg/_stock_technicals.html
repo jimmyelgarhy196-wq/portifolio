@@ -1,0 +1,93 @@
+{% set t = analysis.technical %}
+{% if not t %}
+<div class="card"><div class="empty">
+  N/A — data unavailable. There is not enough stored price history for {{ ticker }} to
+  compute technical indicators.
+</div></div>
+{% else %}
+<div class="grid g-1-2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Technical <span class="accent">score</span></h2></div>
+    <div class="card-body center">
+      <div class="score-ring" style="margin:0 auto">
+        <canvas data-score="{{ t.score.value if t.score and t.score.value is not none else '' }}"></canvas>
+        <div class="inner">
+          <div class="n">{{ t.score.value | fmt_num(0, 'N/A') if t.score else 'N/A' }}</div>
+          <div class="l">Technical</div>
+        </div>
+      </div>
+      <p class="text-sm dim mt-16 mb-0">Trend: <strong>{{ t.trend or 'N/A' }}</strong></p>
+    </div>
+    <div class="card-foot">
+      Indicators are computed from stored daily closes. They describe past price behaviour
+      and are not a forecast.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Indicator <span class="accent">readings</span></h2></div>
+    <div class="card-body">
+      <div class="grid g2">
+        <dl class="kv">
+          <dt>Last close</dt><dd>{{ t.price | fmt_num(2, 'N/A') }}</dd>
+          <dt>SMA 20</dt><dd>{{ t.sma20 | fmt_num(2, 'N/A') }}</dd>
+          <dt>SMA 50</dt><dd>{{ t.sma50 | fmt_num(2, 'N/A') }}</dd>
+          <dt>SMA 200</dt><dd>{{ t.sma200 | fmt_num(2, 'N/A') }}</dd>
+          <dt>RSI (14)</dt><dd>{{ t.rsi14 | fmt_num(1, 'N/A') }}</dd>
+        </dl>
+        <dl class="kv">
+          <dt>MACD</dt><dd>{{ t.macd | fmt_num(3, 'N/A') }}</dd>
+          <dt>MACD signal</dt><dd>{{ t.macd_signal | fmt_num(3, 'N/A') }}</dd>
+          <dt>ATR (14)</dt><dd>{{ t.atr14 | fmt_num(2, 'N/A') }}</dd>
+          <dt>Volatility (20d)</dt><dd>{{ t.volatility_20d | fmt_pct(1, 'N/A') }}</dd>
+          <dt>Volume vs 20d avg</dt><dd>{{ t.volume_ratio | fmt_x(2, 'N/A') }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Signals</h2></div>
+    <div class="card-body flush">
+      {% if t.signals %}
+      <table class="tbl compact">
+        <thead><tr><th>Signal</th><th>Direction</th><th>Detail</th></tr></thead>
+        <tbody>
+        {% for s in t.signals %}
+        <tr>
+          <td>{{ s.name | replace('_', ' ') | title }}</td>
+          <td><span class="badge {{ 'badge-up' if s.direction | lower == 'bullish' else ('badge-down' if s.direction | lower == 'bearish' else 'badge-muted') }}">{{ s.direction | upper }}</span></td>
+          <td class="text-xs dim">{{ s.description }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">No technical signal is currently triggered.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Support &amp; resistance</h2></div>
+    <div class="card-body">
+      <dl class="kv">
+        <dt>Resistance levels</dt>
+        <dd>{% if t.resistance_levels %}{% for lvl in t.resistance_levels %}{{ lvl | fmt_num(2) }}{% if not loop.last %} · {% endif %}{% endfor %}{% else %}N/A{% endif %}</dd>
+        <dt>Support levels</dt>
+        <dd>{% if t.support_levels %}{% for lvl in t.support_levels %}{{ lvl | fmt_num(2) }}{% if not loop.last %} · {% endif %}{% endfor %}{% else %}N/A{% endif %}</dd>
+        <dt>Bollinger upper</dt><dd>{{ t.bb_upper | fmt_num(2, 'N/A') }}</dd>
+        <dt>Bollinger lower</dt><dd>{{ t.bb_lower | fmt_num(2, 'N/A') }}</dd>
+        <dt>Momentum 3m</dt><dd>{{ t.momentum_3m | fmt_pct(1, 'N/A', true) }}</dd>
+        <dt>Momentum 12m</dt><dd>{{ t.momentum_12m | fmt_pct(1, 'N/A', true) }}</dd>
+      </dl>
+      <p class="text-xs faint mt-16 mb-0">
+        Levels are derived from recent highs and lows in the stored series. They are
+        descriptive, not predictive.
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}

@@ -364,6 +364,16 @@ def compute_metrics(
     else:
         put("dividend_yield", UNAVAILABLE, "percent",
             {"dividends_paid": latest.dividends_paid, "market_cap": market_cap})
+    # Payout ratio: dividends paid against net income. Above 1.0 means the
+    # company distributed more than it earned in the period.
+    if is_available(latest.dividends_paid) and is_available(latest.net_income):
+        put("payout_ratio",
+            safe_div(abs(latest.dividends_paid), latest.net_income, allow_negative_denom=False),
+            "percent",
+            {"dividends_paid": latest.dividends_paid, "net_income": latest.net_income})
+    else:
+        put("payout_ratio", UNAVAILABLE, "percent",
+            {"dividends_paid": latest.dividends_paid, "net_income": latest.net_income})
 
     # Final guard: withhold any multiple that is not physically plausible. This
     # is the backstop for a units problem the scale detector could not resolve.
@@ -574,6 +584,36 @@ def score_fundamentals(
     components.append(ScoreComponent(
         "cash_flow", cfg.get("cash_flow", 10), _blend(cf_parts), inputs=cf_inputs,
         explanation="Free cash flow margin, conversion of earnings to cash, and FCF growth.",
+    ))
+
+    # --- Dividend (5%) -------------------------------------------------------
+    # A distinct component because Egyptian retail investors weigh income
+    # heavily, and a high yield funded by borrowing is not the same as one
+    # funded by cash flow: payout and cover are scored alongside the yield.
+    div_parts: list[tuple[float, float]] = []
+    div_inputs: dict[str, Any] = {}
+    dividend_yield = value("dividend_yield")
+    if dividend_yield is not None:
+        # 0% -> 0, 10% -> 100. Yields far above that usually signal a falling
+        # price or a payout that will not repeat, so the scale is capped.
+        div_parts.append((normalize_linear(dividend_yield, 0.0, 0.10), 0.55))
+        div_inputs["dividend_yield"] = f"{dividend_yield:.2%}"
+        if fcf_margin is not None:
+            # Income backed by free cash flow scores better than income that is not.
+            div_parts.append((normalize_linear(fcf_margin, -0.05, 0.20), 0.2))
+            div_inputs["fcf_margin"] = f"{fcf_margin:.1%}"
+        payout = value("payout_ratio")
+        if payout is not None:
+            # Comfortable below ~60%; above 100% the company is paying out more
+            # than it earns, which is scored down rather than rewarded.
+            div_parts.append((normalize_linear(payout, 1.10, 0.30), 0.25))
+            div_inputs["payout_ratio"] = f"{payout:.1%}"
+    components.append(ScoreComponent(
+        "dividend", cfg.get("dividend", 5), _blend(div_parts), inputs=div_inputs,
+        explanation=(
+            "Dividend yield, weighed against the payout ratio and free cash flow "
+            "that has to fund it. Withheld when no dividend data is available."
+        ),
     ))
 
     # --- Catalysts (5%) ------------------------------------------------------

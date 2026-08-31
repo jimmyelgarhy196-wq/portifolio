@@ -1,0 +1,21 @@
+{% extends "gmg/public.html" %}
+{% block title %}{{ legal_title }} — {{ brand.company }}{% endblock %}
+
+{% block body %}
+<div class="legal">
+  <h1>{{ legal_title }}</h1>
+  <p class="updated">
+    {{ brand.company }} · Last updated {{ legal_version | fmt_date }}
+  </p>
+
+  <div class="callout warn">
+    <strong>Please read this in full.</strong> By creating an account or using
+    {{ brand.product }} you agree to these terms. If you do not agree, do not use the service.
+  </div>
+
+  {% block document %}{% endblock %}
+
+  <h2>Questions</h2>
+  <p>If anything here is unclear, <a href="/contact">contact us</a> before using the service.</p>
+</div>
+{% endblock %}

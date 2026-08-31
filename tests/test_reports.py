@@ -98,9 +98,17 @@ class TestWeeklyReport:
 
     def test_breadth_commentary_matches_index_direction(self, db, market):
         body = generate_weekly_report(db, persist=False).section("executive_summary").body
-        # The commentary must not claim a rising index while describing a fall.
-        if "declined" in body:
-            assert "The index rose on broad participation" not in body
+        # Anchor on the benchmark sentence itself. The word "declined" also
+        # appears in the breadth count ("N advanced and M declined"), which says
+        # nothing about the index's own direction.
+        fell = "benchmark declined" in body
+        rose = "benchmark gained" in body
+        assert fell or rose, "the benchmark move must be stated"
+        # The commentary must never claim the opposite of the measured move.
+        if fell:
+            assert "The index rose" not in body
+        if rose:
+            assert "The index fell" not in body
 
 
 class TestAlerts:

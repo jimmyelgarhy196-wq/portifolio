@@ -1,0 +1,151 @@
+{% set v = valuation %}
+<div class="callout gold">
+  <strong>This is a calculator, not a price target.</strong> Every number below is the output
+  of assumptions shown alongside it. Change an assumption and the answer changes. GMG does not
+  issue price targets and does not tell you what to buy or sell.
+</div>
+
+<div class="grid g-1-2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Blended <span class="accent">fair value</span></h2></div>
+    <div class="card-body">
+      {% if v and v.fair_value %}
+      <div class="mono" style="font-size:30px;font-weight:750;letter-spacing:-.03em">
+        {{ v.fair_value | fmt_price('') }}
+      </div>
+      <div class="{{ v.upside | direction_class }}" style="font-family:var(--mono);font-weight:650">
+        {{ v.upside | fmt_pct(1, 'N/A', true) }} vs {{ v.current_price | fmt_price('') }}
+      </div>
+      <dl class="kv mt-16">
+        <dt>Methods contributing</dt><dd>{{ v.method_count }}</dd>
+        <dt>Lowest method</dt><dd>{{ v.low | fmt_num(2) }}</dd>
+        <dt>Highest method</dt><dd>{{ v.high | fmt_num(2) }}</dd>
+      </dl>
+      <p class="text-xs faint mt-16 mb-0">{{ v.note }}</p>
+      {% else %}
+      <p class="na mb-0">{{ v.note if v else 'N/A — data unavailable.' }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Method <span class="accent">by method</span></h2></div>
+    <div class="card-body flush">
+      <table class="tbl compact">
+        <thead><tr><th>Method</th><th class="num">Fair value</th><th class="num">Weight</th><th>Note</th></tr></thead>
+        <tbody>
+        {% for m in (v.methods if v else []) %}
+        <tr>
+          <td>{{ m.label }}</td>
+          <td class="num {{ '' if m.available else 'na' }}">
+            {{ m.fair_value | fmt_num(2) if m.available else 'N/A' }}
+          </td>
+          <td class="num">{{ m.weight | fmt_pct(0) if m.available else '—' }}</td>
+          <td class="text-xs faint">{{ m.reason or '' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DCF ----------------------------------------------------------------- -->
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Discounted <span class="accent">cash flow</span></h2>
+    <span class="card-meta">two-stage model · adjust and re-run</span>
+  </div>
+  <div class="card-body">
+    {% if dcf and dcf.available %}
+    <form id="dcfForm" class="form-row mb-16">
+      <div class="field"><label>Base free cash flow (EGP)</label>
+        <input type="number" step="any" name="base_fcf" value="{{ dcf.assumptions.base_fcf }}"></div>
+      <div class="field"><label>Shares outstanding</label>
+        <input type="number" step="any" name="shares_outstanding" value="{{ dcf.assumptions.shares_outstanding }}"></div>
+      <div class="field"><label>Net debt (EGP)</label>
+        <input type="number" step="any" name="net_debt" value="{{ dcf.assumptions.net_debt }}"></div>
+      <div class="field"><label>Initial growth</label>
+        <input type="number" step="0.01" name="growth_rate" value="{{ dcf.assumptions.growth_rate | round(4) }}"></div>
+      <div class="field"><label>Terminal growth</label>
+        <input type="number" step="0.01" name="terminal_growth" value="{{ dcf.assumptions.terminal_growth | round(4) }}"></div>
+      <div class="field"><label>Discount rate</label>
+        <input type="number" step="0.01" name="discount_rate" value="{{ dcf.assumptions.discount_rate | round(4) }}"></div>
+      <div class="field"><label>Forecast years</label>
+        <input type="number" step="1" min="1" max="15" name="years" value="{{ dcf.assumptions.years }}"></div>
+      <input type="hidden" name="current_price" value="{{ v.current_price if v else '' }}">
+      <div class="field"><label>&nbsp;</label><button class="btn btn-primary" type="submit">Re-run model</button></div>
+    </form>
+
+    <div id="dcfResult">
+      <div class="tiles g4 mb-16">
+        <div class="tile"><div class="k">Fair value per share</div>
+          <div class="v">{{ dcf.fair_value_per_share | fmt_num(2, 'N/A') }}</div></div>
+        <div class="tile"><div class="k">Implied upside</div>
+          <div class="v {{ dcf.upside | direction_class }}">{{ dcf.upside | fmt_pct(1, 'N/A', true) }}</div></div>
+        <div class="tile"><div class="k">Discount rate</div>
+          <div class="v sm">{{ dcf.assumptions.discount_rate | fmt_pct(2) }}</div>
+          <div class="s">{{ dcf.assumptions.discount_rate_source }}</div></div>
+        <div class="tile"><div class="k">From terminal value</div>
+          <div class="v sm">{{ dcf.terminal_share_of_value | fmt_pct(0, 'N/A') }}</div>
+          <div class="s">of enterprise value</div></div>
+      </div>
+
+      <div class="tbl-scroll">
+        <table class="tbl compact">
+          <thead><tr><th>Year</th><th class="num">Growth</th><th class="num">Free cash flow</th>
+            <th class="num">Discount factor</th><th class="num">Present value</th></tr></thead>
+          <tbody>
+          {% for p in dcf.projections %}
+          <tr>
+            <td>Year {{ p.year }}</td>
+            <td class="num">{{ p.growth | fmt_pct(2, 'N/A', true) }}</td>
+            <td class="num">{{ p.fcf | fmt_compact }}</td>
+            <td class="num">{{ p.discount_factor | fmt_num(3) }}</td>
+            <td class="num">{{ p.present_value | fmt_compact }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% for note in dcf.notes %}
+      <p class="text-xs faint mt-16 mb-0">{{ note }}</p>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="na mb-0">{{ dcf.unavailable_reason if dcf else 'N/A — data unavailable.' }}</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if sensitivity %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Sensitivity <span class="accent">grid</span></h2>
+    <span class="card-meta">fair value per share across discount rate × terminal growth</span>
+  </div>
+  <div class="card-body flush">
+    <div class="tbl-scroll">
+      <table class="tbl compact">
+        <thead>
+          <tr><th>Discount rate ↓ / terminal growth →</th>
+            {% for g in sensitivity.growth_rates %}<th class="num">{{ g | fmt_pct(1) }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+        {% for row in sensitivity.rows %}
+        <tr>
+          <td class="mono">{{ row.discount_rate | fmt_pct(1) }}</td>
+          {% for cell in row['values'] %}
+          <td class="num {{ 'na' if cell is none }}">{{ cell | fmt_num(2) if cell is not none else '—' }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-foot">{{ sensitivity.note }}</div>
+</div>
+{% endif %}

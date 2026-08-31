@@ -1,0 +1,176 @@
+{% extends "gmg/app.html" %}
+{% block title %}Stock screener{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Stock screener</h1>
+    <p class="page-sub">
+      {{ result.rows | length }} of {{ result.universe }} companies pass
+      {% if loaded %}· screen “{{ loaded.name }}”{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="grid g-1-2">
+  <div>
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Criteria</h2></div>
+      <div class="card-body">
+        <form method="get" action="/screener">
+          {% set active_min = {} %}{% set active_max = {} %}
+          {% for c in criteria %}
+            {% if c.op == 'gte' %}{% set _ = active_min.update({c.key: c.value}) %}
+            {% else %}{% set _ = active_max.update({c.key: c.value}) %}{% endif %}
+          {% endfor %}
+
+          <div class="field">
+            <label for="sort">Sort by</label>
+            <select id="sort" name="sort">
+              {% for f in filters %}
+              <option value="{{ f.key }}" {{ 'selected' if sort == f.key }}>{{ f.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="index">Index</label>
+            <select id="index" name="index">
+              <option value="">Any</option>
+              {% for code in ['EGX30', 'EGX70', 'EGX100'] %}
+              <option value="{{ code }}" {{ 'selected' if code in indices }}>{{ code }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="sector">Sector</label>
+            <select id="sector" name="sector">
+              <option value="">Any</option>
+              {% for s in all_sectors %}
+              <option value="{{ s }}" {{ 'selected' if s in sectors }}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="divider"></div>
+
+          {% for f in filters %}
+          <div class="form-row" style="gap:8px">
+            <div class="field" style="flex:1;margin-bottom:8px">
+              <label>{{ f.label }}</label>
+              <div class="row" style="gap:6px">
+                <input type="number" step="any" name="min_{{ f.key }}" placeholder="min"
+                       value="{{ active_min.get(f.key, '') }}">
+                <input type="number" step="any" name="max_{{ f.key }}" placeholder="max"
+                       value="{{ active_max.get(f.key, '') }}">
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          <button class="btn btn-primary btn-block mt-16" type="submit">Run screen</button>
+          <a class="btn btn-ghost btn-block mt-8" href="/screener">Clear all</a>
+        </form>
+      </div>
+      <div class="card-foot text-xs">
+        Percentages are entered as decimals — 0.05 means 5%. A company whose value for a
+        criterion is unknown is excluded rather than assumed to pass.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Saved screens</h2></div>
+      <div class="card-body">
+        {% if saved %}
+        {% for s in saved %}
+        <div class="row mb-8">
+          <a class="grow text-sm" href="/screener?screen={{ s.id }}">{{ s.name }}</a>
+          <form method="post" action="/screener/{{ s.id }}/delete" data-confirm="Delete this saved screen?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+          </form>
+        </div>
+        {% endfor %}
+        <div class="divider"></div>
+        {% else %}
+        <p class="text-sm faint">No saved screens yet.</p>
+        {% endif %}
+
+        <form method="post" action="/screener/save">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="payload" value='{{ {"criteria": criteria, "sectors": sectors, "indices": indices, "sort": sort} | tojson }}'>
+          <div class="field">
+            <label for="screen_name">Save current criteria as</label>
+            <input id="screen_name" type="text" name="name" placeholder="e.g. Cheap and profitable">
+          </div>
+          <button class="btn btn-block" type="submit">Save screen</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">Results</h2>
+        <span class="card-meta">{{ result.rows | length }} matches</span>
+      </div>
+      <div class="card-body flush">
+        {% if result.rows %}
+        <div class="tbl-scroll tall">
+          <table class="tbl compact">
+            <thead><tr>
+              <th>Ticker</th><th class="hide-sm">Company</th>
+              <th class="num">Price</th><th class="num">Change</th>
+              <th class="num">GMG</th><th class="num">P/E</th><th class="num">P/B</th>
+              <th class="num hide-sm">Div yield</th><th class="num hide-sm">ROE</th>
+            </tr></thead>
+            <tbody>
+            {% for row in result.rows %}
+            <tr>
+              <td><a class="tk" href="/stock/{{ row.ticker }}">{{ row.ticker }}</a></td>
+              <td class="nm hide-sm">{{ row.name }}</td>
+              <td class="num">{{ row.values.price | fmt_price('') }}</td>
+              <td class="num">
+                {% if row.values.change_pct is not none %}
+                <span class="chg {{ row.values.change_pct | direction_class }}">{{ row.values.change_pct | fmt_pct(2, 'N/A', true) }}</span>
+                {% else %}<span class="na">N/A</span>{% endif %}
+              </td>
+              <td class="num">
+                {% if row.values.alpha_score is not none %}
+                <span class="score-chip {{ row.values.alpha_score | score_class }}">{{ row.values.alpha_score | fmt_num(0) }}</span>
+                {% else %}<span class="score-chip score-na">N/A</span>{% endif %}
+              </td>
+              <td class="num">{{ row.values.pe | fmt_num(2, 'N/A') }}</td>
+              <td class="num">{{ row.values.pb | fmt_num(2, 'N/A') }}</td>
+              <td class="num hide-sm">{{ row.values.dividend_yield | fmt_pct(1, 'N/A') }}</td>
+              <td class="num hide-sm">{{ row.values.roe | fmt_pct(1, 'N/A') }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty">
+          <span class="ico">⌗</span>
+          No company passes every criterion.
+          {% if result.excluded_for_missing_data %}
+          <br><span class="text-xs">Some were excluded because a value was unavailable — see below.</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% if result.note %}
+      <div class="card-foot">
+        {{ result.note }}
+        <div class="mt-8 text-xs">
+          {% for key, count in result.excluded_for_missing_data.items() %}
+          <span class="badge badge-muted">{{ key }}: {{ count }} without data</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "gmg/public.html" %}
+{% block title %}Data sources — {{ brand.company }}{% endblock %}
+
+{% block body %}
+<section class="section">
+  <div class="section-narrow" style="max-width:960px">
+    <h1>Where our data comes from</h1>
+    <p class="dim" style="font-size:15px;max-width:700px">
+      Every number on {{ brand.product }} carries its source, its timestamp and any delay.
+      This page states the whole chain in one place, including what is <em>not</em> connected.
+    </p>
+
+    <div class="callout gold">
+      <strong>What we do not do.</strong> We do not scrape TradingView, and we make no claim
+      that TradingView provides an unrestricted real-time market-data API. We do not present
+      generated figures as live prices. Where a provider is unavailable, the platform says so
+      and shows “N/A — data unavailable” rather than filling the gap.
+    </div>
+
+    <h2>Quote providers</h2>
+    <p class="text-sm dim">Tried in order. The first that can serve a quote does, and its
+    identity travels with every price shown.</p>
+    <div class="card">
+      <div class="card-body flush">
+        <table class="tbl compact">
+          <thead><tr><th>Provider</th><th>Status</th><th class="num">Delay</th><th>What it is</th></tr></thead>
+          <tbody>
+          {% for p in quote_providers %}
+          <tr>
+            <td>{{ p.name }}</td>
+            <td>
+              {% if p.is_demo %}<span class="badge badge-demo">Demo data</span>
+              {% elif p.available %}<span class="badge badge-live">Available</span>
+              {% else %}<span class="badge badge-none">Not configured</span>{% endif %}
+            </td>
+            <td class="num">{{ p.delay }} min</td>
+            <td class="text-xs faint">{{ p.note }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h2>Freshness badges</h2>
+    <div class="card"><div class="card-body flush">
+      <table class="tbl compact">
+        <tbody>
+          <tr><td><span class="badge badge-live">LIVE</span></td>
+            <td class="text-sm dim">Real-time price from a licensed provider with no delay.</td></tr>
+          <tr><td><span class="badge badge-delayed">DELAYED</span></td>
+            <td class="text-sm dim">Real market price, delayed by the number of minutes shown beside it.</td></tr>
+          <tr><td><span class="badge badge-eod">END OF DAY</span></td>
+            <td class="text-sm dim">The last stored closing price, with its age in days. Not a live price.</td></tr>
+          <tr><td><span class="badge badge-demo">DEMO DATA</span></td>
+            <td class="text-sm dim"><strong>Generated for demonstration.</strong> Not a real market price and
+              must not be used for any decision. Shown only when no real source is connected.</td></tr>
+          <tr><td><span class="badge badge-none">NO DATA</span></td>
+            <td class="text-sm dim">No quote is available. Nothing is estimated in its place.</td></tr>
+        </tbody>
+      </table>
+    </div></div>
+
+    <h2>Fundamental and reference data</h2>
+    <div class="card"><div class="card-body flush">
+      <table class="tbl compact">
+        <thead><tr><th>Provider</th><th>Kind</th><th>Status</th><th>Note</th></tr></thead>
+        <tbody>
+        {% for p in market_providers %}
+        <tr>
+          <td>{{ p.name }}</td>
+          <td class="text-xs faint">{{ p.kind if p.kind is defined else '—' }}</td>
+          <td>
+            {% if p.available %}<span class="badge badge-live">Available</span>
+            {% else %}<span class="badge badge-none">Unavailable</span>{% endif %}
+          </td>
+          <td class="text-xs faint">{{ p.note if p.note is defined else (p.reason if p.reason is defined else '') }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+
+    {% if records %}
+    <h2>Recorded source health</h2>
+    <div class="card"><div class="card-body flush">
+      <table class="tbl compact">
+        <thead><tr><th>Source</th><th>Kind</th><th>Last success</th><th>Last error</th></tr></thead>
+        <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ r.name }}{% if r.is_demo %} <span class="badge badge-demo">Demo</span>{% endif %}</td>
+          <td class="text-xs faint">{{ r.kind }}</td>
+          <td class="text-xs">{{ r.last_success_at | fmt_dt('%d %b %Y, %H:%M', 'never') }}</td>
+          <td class="text-xs faint">{{ (r.last_error or '—')[:80] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+    {% endif %}
+
+    <h2>Other services</h2>
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Email</h3></div>
+        <div class="card-body">
+          <dl class="kv">
+            <dt>Provider</dt><dd>{{ email.provider }}</dd>
+            <dt>Configured</dt><dd>{{ 'Yes' if email.configured else 'No' }}</dd>
+          </dl>
+          <p class="text-xs faint mt-8 mb-0">{{ email.note }}</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Payments</h3></div>
+        <div class="card-body">
+          <dl class="kv">
+            <dt>Provider</dt><dd>{{ payments.display_name }}</dd>
+            <dt>Processes payments</dt><dd>{{ 'Yes' if payments.processes_payments else 'No' }}</dd>
+          </dl>
+          <p class="text-xs faint mt-8 mb-0">{{ payments.note }}</p>
+        </div>
+      </div>
+    </div>
+
+    <h2>How we handle missing data</h2>
+    <ul class="text-sm dim" style="line-height:1.9">
+      <li>A missing figure renders as <strong>“N/A — data unavailable”</strong>, never as zero.</li>
+      <li>A score whose inputs are too sparse is <strong>withheld</strong>, not defaulted.</li>
+      <li>A ratio whose denominator is zero is unavailable, never infinity.</li>
+      <li>A rating is withheld when score coverage falls below the threshold we require.</li>
+      <li>An alert is skipped, with the reason shown, when the value it needs is unavailable.</li>
+      <li>Demonstration data is labelled everywhere it appears and never fires an alert.</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

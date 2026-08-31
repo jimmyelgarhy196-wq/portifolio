@@ -1,0 +1,128 @@
+{% extends "gmg/app.html" %}
+{% block title %}Admin · {{ subject.email }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow"><h1 class="page-title">{{ subject.email }}</h1>
+    <p class="page-sub">Account #{{ subject.id }} · joined {{ subject.created_at | fmt_date }}</p></div>
+  <a class="btn btn-sm btn-ghost" href="/admin/users">All users</a>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Account</h2></div>
+    <div class="card-body">
+      <dl class="kv">
+        <dt>Name</dt><dd>{{ subject.full_name or '—' }}</dd>
+        <dt>Role</dt><dd>{{ subject.role }}</dd>
+        <dt>Status</dt><dd>{{ subject.status }}</dd>
+        <dt>Email verified</dt><dd>{{ subject.email_verified_at | fmt_dt('%d %b %Y, %H:%M', 'no') }}</dd>
+        <dt>Last sign-in</dt><dd>{{ subject.last_login_at | fmt_dt }}</dd>
+        <dt>Last sign-in IP</dt><dd>{{ subject.last_login_ip or '—' }}</dd>
+        <dt>Marketing opt-in</dt><dd>{{ 'Yes' if subject.marketing_opt_in else 'No' }}</dd>
+      </dl>
+      <p class="text-xs faint mt-16 mb-0">
+        Password hashes and session tokens are never displayed here or anywhere in the admin
+        panel.
+      </p>
+    </div>
+    <div class="card-foot">
+      <div class="row wrap">
+        <form method="post" action="/admin/users/{{ subject.id }}/status" class="row">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <select name="status" style="width:auto">
+            {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if subject.status == s }}>{{ s }}</option>{% endfor %}
+          </select>
+          <button class="btn btn-sm" type="submit">Set status</button>
+        </form>
+        <form method="post" action="/admin/users/{{ subject.id }}/role" class="row">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <select name="role" style="width:auto">
+            {% for r in roles %}<option value="{{ r }}" {{ 'selected' if subject.role == r }}>{{ r }}</option>{% endfor %}
+          </select>
+          <button class="btn btn-sm" type="submit">Set role</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Subscription</h2></div>
+    <div class="card-body">
+      {% if subscription %}
+      <dl class="kv">
+        <dt>Status</dt><dd>{{ subscription.status }}</dd>
+        <dt>Period start</dt><dd>{{ subscription.current_period_start | fmt_date }}</dd>
+        <dt>Period end</dt><dd>{{ subscription.current_period_end | fmt_date }}</dd>
+        <dt>Entitled now</dt><dd>{{ 'Yes' if subscription.is_entitled() else 'No' }}</dd>
+        <dt>Days remaining</dt><dd>{{ subscription.days_remaining if subscription.days_remaining is not none else 'N/A' }}</dd>
+      </dl>
+      {% else %}
+      <p class="na mb-0">No subscription record.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Payments</h2></div>
+  <div class="card-body flush">
+    {% if payments %}
+    <table class="tbl compact">
+      <thead><tr><th>Date</th><th class="num">Amount</th><th>Status</th><th>Provider</th><th>Reference</th><th></th></tr></thead>
+      <tbody>
+      {% for p in payments %}
+      <tr>
+        <td class="nowrap">{{ p.created_at | fmt_dt }}</td>
+        <td class="num">EGP {{ p.amount_egp | fmt_num(2) }}</td>
+        <td><span class="badge {{ {'SUCCEEDED': 'badge-live', 'PENDING': 'badge-delayed', 'FAILED': 'badge-down'}.get(p.status, 'badge-muted') }}">{{ p.status }}</span></td>
+        <td class="text-xs">{{ p.provider }}</td>
+        <td class="text-xs faint mono">{{ p.external_id or '—' }}</td>
+        <td>
+          {% if p.status == 'PENDING' %}
+          <form method="post" action="/admin/payments/{{ p.id }}/confirm" class="row"
+                data-confirm="Confirm that EGP {{ p.amount_egp }} was genuinely received? This activates the subscription and is recorded in the audit log against your account.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="text" name="reference" placeholder="bank reference" style="width:150px">
+            <button class="btn btn-sm btn-primary" type="submit">Confirm payment</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty">No payments recorded.</div>{% endif %}
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Emails</h2></div>
+    <div class="card-body flush">
+      <div class="tbl-scroll tall">
+        <table class="tbl compact"><tbody>
+        {% for e in emails %}
+        <tr><td class="faint nowrap text-xs">{{ e.created_at | fmt_dt }}</td>
+          <td class="text-xs">{{ e.template }}</td>
+          <td><span class="badge {{ 'badge-live' if e.status == 'SENT' else 'badge-down' }}">{{ e.status }}</span></td></tr>
+        {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Audit trail</h2></div>
+    <div class="card-body flush">
+      <div class="tbl-scroll tall">
+        <table class="tbl compact"><tbody>
+        {% for e in events %}
+        <tr><td class="faint nowrap text-xs">{{ e.created_at | fmt_dt }}</td>
+          <td class="text-xs">{{ e.action | replace('_', ' ') }}</td>
+          <td class="text-xs faint mono">{{ e.ip or '' }}</td></tr>
+        {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

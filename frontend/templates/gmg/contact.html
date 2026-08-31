@@ -1,0 +1,44 @@
+{% extends "gmg/public.html" %}
+{% block title %}Contact {{ brand.company }}{% endblock %}
+
+{% block body %}
+<section class="section">
+  <div class="section-narrow" style="max-width:620px">
+    <h1>Contact us</h1>
+    <p class="dim">Questions about the platform, the data or your subscription. We reply
+    within two business days.</p>
+
+    {% if flash %}<div class="flash {{ flash.kind }}"><span>{{ flash.message }}</span></div>{% endif %}
+
+    <div class="card">
+      <div class="card-body">
+        <form method="post" action="/contact">
+          <div class="field">
+            <label for="name">Your name</label>
+            <input id="name" type="text" name="name" value="{{ form.name or '' }}">
+          </div>
+          <div class="field">
+            <label for="email">Your email address</label>
+            <input id="email" type="email" name="email" value="{{ form.email or '' }}" required>
+          </div>
+          <div class="field">
+            <label for="subject">Subject</label>
+            <input id="subject" type="text" name="subject" value="{{ form.subject or '' }}">
+          </div>
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" required></textarea>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Send message</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="callout mt-24">
+      <strong>We cannot give investment advice.</strong> {{ brand.company }} does not
+      recommend securities to individuals, does not manage money, and cannot tell you what to
+      buy or sell. Questions about the platform, the data and your subscription are welcome.
+    </div>
+  </div>
+</section>
+{% endblock %}

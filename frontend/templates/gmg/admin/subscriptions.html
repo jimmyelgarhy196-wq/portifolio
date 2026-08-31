@@ -1,0 +1,89 @@
+{% extends "gmg/app.html" %}
+{% block title %}Admin · Subscriptions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow"><h1 class="page-title">Subscriptions &amp; billing</h1></div>
+  <a class="btn btn-sm btn-ghost" href="/admin">Back to admin</a>
+</div>
+
+<div class="tiles g4 mb-16">
+  <div class="tile"><div class="k">Paying</div><div class="v">{{ metrics.paying }}</div></div>
+  <div class="tile"><div class="k">Trialing</div><div class="v">{{ metrics.trialing }}</div></div>
+  <div class="tile"><div class="k">MRR</div><div class="v sm">EGP {{ metrics.mrr_egp | fmt_num(0) }}</div></div>
+  <div class="tile"><div class="k">Revenue collected</div><div class="v sm">EGP {{ metrics.revenue_recorded_egp | fmt_num(0) }}</div>
+    <div class="s">confirmed payments only</div></div>
+</div>
+
+{% if metrics.note %}<div class="callout warn">{{ metrics.note }}</div>{% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Payments awaiting confirmation</h2>
+    <span class="card-meta">{{ pending | length }} pending</span>
+  </div>
+  <div class="card-body flush">
+    {% if pending %}
+    <table class="tbl compact">
+      <thead><tr><th>Requested</th><th>User</th><th class="num">Amount</th><th>Description</th><th></th></tr></thead>
+      <tbody>
+      {% for p in pending %}
+      {% set u = users.get(p.user_id) %}
+      <tr>
+        <td class="nowrap">{{ p.created_at | fmt_dt }}</td>
+        <td>{% if u %}<a href="/admin/users/{{ u.id }}">{{ u.email }}</a>{% else %}#{{ p.user_id }}{% endif %}</td>
+        <td class="num">EGP {{ p.amount_egp | fmt_num(2) }}</td>
+        <td class="text-xs faint">{{ p.description or '—' }}</td>
+        <td>
+          <form method="post" action="/admin/payments/{{ p.id }}/confirm" class="row"
+                data-confirm="Confirm that EGP {{ p.amount_egp }} was genuinely received? This activates the subscription and is recorded in the audit log against your account.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="text" name="reference" placeholder="bank reference" style="width:150px">
+            <button class="btn btn-sm btn-primary" type="submit">Confirm payment</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No payments are awaiting confirmation.</div>
+    {% endif %}
+  </div>
+  <div class="card-foot">
+    Confirming a payment is an assertion that money genuinely arrived. It activates the
+    subscription and is written to the audit log with your identity and the reference you
+    enter. Nothing in this system marks a payment succeeded on its own.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">All subscriptions</h2>
+    <form method="post" action="/admin/subscriptions/expire" style="margin-left:auto"
+          data-confirm="Expire every subscription whose paid period has ended?">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-sm" type="submit">Run expiry sweep</button>
+    </form>
+  </div>
+  <div class="card-body flush">
+    <div class="tbl-scroll tall">
+      <table class="tbl compact">
+        <thead><tr><th>User</th><th>Status</th><th>Period start</th><th>Period end</th>
+          <th>Entitled</th><th class="num">Days left</th></tr></thead>
+        <tbody>
+        {% for s in subscriptions %}
+        {% set u = users.get(s.user_id) %}
+        <tr>
+          <td>{% if u %}<a href="/admin/users/{{ u.id }}">{{ u.email }}</a>{% else %}#{{ s.user_id }}{% endif %}</td>
+          <td><span class="badge {{ {'ACTIVE': 'badge-live', 'TRIAL': 'badge-info', 'CANCELLED': 'badge-delayed', 'EXPIRED': 'badge-none', 'PAST_DUE': 'badge-down'}.get(s.status, 'badge-muted') }}">{{ s.status }}</span></td>
+          <td class="text-xs">{{ s.current_period_start | fmt_date }}</td>
+          <td class="text-xs">{{ s.current_period_end | fmt_date }}</td>
+          <td>{{ 'Yes' if s.is_entitled() else 'No' }}</td>
+          <td class="num">{{ s.days_remaining if s.days_remaining is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

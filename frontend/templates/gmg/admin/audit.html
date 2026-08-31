@@ -1,0 +1,37 @@
+{% extends "gmg/app.html" %}
+{% block title %}Admin · Audit log{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow"><h1 class="page-title">Audit log</h1>
+    <p class="page-sub">{{ events | length }} most recent events</p></div>
+  <a class="btn btn-sm btn-ghost" href="/admin">Back to admin</a>
+</div>
+
+<div class="card"><div class="card-body">
+  <form method="get" action="/admin/audit" class="form-row">
+    <div class="field"><label for="q">Filter by action</label>
+      <input id="q" type="search" name="q" value="{{ q }}" placeholder="e.g. login_failed"></div>
+    <div class="field"><label>&nbsp;</label><button class="btn btn-primary" type="submit">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="card-body flush">
+  <div class="tbl-scroll tall">
+    <table class="tbl compact">
+      <thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Target</th><th>IP</th><th>Detail</th></tr></thead>
+      <tbody>
+      {% for e in events %}
+      <tr>
+        <td class="faint nowrap text-xs">{{ e.created_at | fmt_dt }}</td>
+        <td class="text-xs">{{ e.action }}</td>
+        <td class="text-xs">{{ e.actor_email or '—' }}</td>
+        <td class="text-xs faint">{{ e.target or '—' }}</td>
+        <td class="text-xs faint mono">{{ e.ip or '—' }}</td>
+        <td class="text-xs faint">{{ e.detail if e.detail else '' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "gmg/app.html" %}
+{% block title %}AI research{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">GMG research</h1>
+    <p class="page-sub">
+      {{ ranked | length }} companies scored
+      {% if unscored > 0 %}· {{ unscored }} not scored for lack of data{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="callout gold">
+  Rankings are computed from stored data by fixed rules. A company with too little data is
+  <strong>not ranked</strong> rather than given a default score, so the list below is the set
+  we can actually assess — not the whole market.
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Ranked by GMG score</h2></div>
+  <div class="card-body flush">
+    {% if ranked %}
+    <div class="tbl-scroll tall">
+      <table class="tbl">
+        <thead><tr>
+          <th>#</th><th>Ticker</th><th class="hide-sm">Company</th>
+          <th class="num">GMG</th><th class="num">Fundamental</th><th class="num">Technical</th>
+          <th class="num hide-sm">Quant</th><th class="num">Price</th><th class="num">Change</th>
+          <th class="hide-sm">Confidence</th>
+        </tr></thead>
+        <tbody>
+        {% for s in ranked %}
+        {% set c = companies.get(s.ticker) %}{% set q = quotes.get(s.ticker) %}
+        <tr>
+          <td class="faint">{{ loop.index }}</td>
+          <td><a class="tk" href="/stock/{{ s.ticker }}?tab=research">{{ s.ticker }}</a></td>
+          <td class="nm hide-sm">{{ c.name if c else '—' }}</td>
+          <td class="num"><span class="score-chip {{ s.alpha_score | score_class }}">{{ s.alpha_score | fmt_num(0) }}</span></td>
+          <td class="num">{{ s.fundamental_score | fmt_num(0, 'N/A') }}</td>
+          <td class="num">{{ s.technical_score | fmt_num(0, 'N/A') }}</td>
+          <td class="num hide-sm">{{ s.quant_score | fmt_num(0, 'N/A') }}</td>
+          <td class="num">{{ q.price | fmt_price('') if q else 'N/A' }}</td>
+          <td class="num">
+            {% if q and q.change_pct is not none %}
+            <span class="chg {{ q.change_pct | direction_class }}">{{ q.change_pct | fmt_pct(2, 'N/A', true) }}</span>
+            {% else %}<span class="na">N/A</span>{% endif %}
+          </td>
+          <td class="hide-sm"><span class="badge badge-muted">{{ s.confidence or 'N/A' }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <span class="ico">◆</span>
+      No company has been scored yet. Run <code>python scripts/research.py</code> to build
+      scores from the stored data.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if recommendations %}
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Latest research output</h2></div>
+  <div class="card-body flush">
+    <div class="tbl-scroll">
+      <table class="tbl compact">
+        <thead><tr><th>Date</th><th>Ticker</th><th>View</th><th class="num">Score</th>
+          <th class="hide-sm">Horizon</th><th class="hide-sm">Rationale</th></tr></thead>
+        <tbody>
+        {% for r in recommendations %}
+        <tr>
+          <td class="faint nowrap">{{ r.created_at | fmt_date }}</td>
+          <td><a class="tk" href="/stock/{{ r.ticker }}?tab=research">{{ r.ticker }}</a></td>
+          <td><span class="badge {{ {'BUY': 'badge-up', 'SELL': 'badge-down', 'HOLD': 'badge-muted'}.get(r.action, 'badge-info') }}">{{ r.action }}</span></td>
+          <td class="num">{{ r.alpha_score | fmt_num(0, 'N/A') }}</td>
+          <td class="hide-sm text-xs">{{ r.expected_holding_period or '—' }}</td>
+          <td class="hide-sm text-xs faint">{{ (r.rationale or '')[:140] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-foot">
+    Research output is information, not personal advice, and is never a promise of any return.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}{{ brand.product }}{% endblock %} · GMG</title>
+  <link rel="stylesheet" href="/static/css/terminal.css">
+  <link rel="stylesheet" href="/static/css/gmg.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23d4af37'/><text x='32' y='43' font-size='26' font-weight='bold' text-anchor='middle' font-family='sans-serif' fill='%2310131a'>G</text></svg>">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+{% if data_banner %}
+<div class="data-banner {{ data_banner.tone }}">
+  <strong>{{ data_banner.badge }}</strong>
+  <span>{{ data_banner.message }}</span>
+  <span class="spacer"></span>
+  <a href="/data-sources" style="color:inherit;text-decoration:underline">Data sources</a>
+</div>
+{% endif %}
+
+<header class="app-topbar">
+  <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+  {% from 'gmg/_brand.html' import logo %}{{ logo() }}
+
+  <div class="search-wrap hide-sm">
+    <span class="search-icon">⌕</span>
+    <input class="search-input" id="gmgSearch" type="search" autocomplete="off"
+           placeholder="Search EGX by ticker, company or sector…"
+           aria-label="Search EGX stocks">
+    <div class="search-results" id="gmgSearchResults"></div>
+  </div>
+
+  <span class="grow"></span>
+
+  <span class="market-pill {{ market.status.value | lower }}" title="{{ market.note }}">
+    <span class="dot"></span>{{ market.status.label }}
+    <span class="dim">· {{ market.local_time.strftime('%H:%M') }} EET</span>
+  </span>
+
+  {% if viewer.is_authenticated %}
+    <a class="btn btn-sm btn-ghost hide-sm" href="/account">{{ user.display_name }}</a>
+    {% if viewer.is_admin %}<a class="btn btn-sm btn-ghost hide-sm" href="/admin">Admin</a>{% endif %}
+    <form method="post" action="/logout" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-sm" type="submit">Sign out</button>
+    </form>
+  {% else %}
+    <a class="btn btn-sm btn-ghost" href="/login">Sign in</a>
+    <a class="btn btn-sm btn-primary" href="/signup">Start free trial</a>
+  {% endif %}
+</header>
+
+<div class="app-body">
+  <div class="nav-scrim" id="navScrim"></div>
+  <nav class="app-sidebar" id="appSidebar">
+    <div class="nav-group">
+      <div class="nav-group-title">Market</div>
+      <a class="nav-link {{ 'active' if active == 'market' }}" href="/market"><span class="ico">◧</span>Dashboard</a>
+      <a class="nav-link {{ 'active' if active == 'stocks' }}" href="/stocks"><span class="ico">☰</span>All stocks</a>
+      <a class="nav-link {{ 'active' if active == 'screener' }}" href="/screener"><span class="ico">⌗</span>Screener{% if not entitled %}<span class="lock">🔒</span>{% endif %}</a>
+      <a class="nav-link {{ 'active' if active == 'sectors' }}" href="/sectors"><span class="ico">◫</span>Sectors</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Research</div>
+      <a class="nav-link {{ 'active' if active == 'research' }}" href="/research"><span class="ico">◆</span>AI research{% if not entitled %}<span class="lock">🔒</span>{% endif %}</a>
+      <a class="nav-link {{ 'active' if active == 'reports' }}" href="/reports"><span class="ico">▤</span>Weekly report{% if not entitled %}<span class="lock">🔒</span>{% endif %}</a>
+      <a class="nav-link {{ 'active' if active == 'valuation' }}" href="/valuation"><span class="ico">∑</span>Valuation tools{% if not entitled %}<span class="lock">🔒</span>{% endif %}</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">My workspace</div>
+      <a class="nav-link {{ 'active' if active == 'watchlists' }}" href="/watchlists"><span class="ico">★</span>Watchlists</a>
+      <a class="nav-link {{ 'active' if active == 'portfolio' }}" href="/portfolio"><span class="ico">▦</span>Portfolio</a>
+      <a class="nav-link {{ 'active' if active == 'alerts' }}" href="/alerts"><span class="ico">◈</span>Alerts{% if alert_count %}<span class="count">{{ alert_count }}</span>{% endif %}</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Account</div>
+      <a class="nav-link {{ 'active' if active == 'account' }}" href="/account"><span class="ico">◎</span>Profile</a>
+      <a class="nav-link {{ 'active' if active == 'subscription' }}" href="/account/subscription"><span class="ico">◇</span>Subscription</a>
+      <a class="nav-link {{ 'active' if active == 'datasources' }}" href="/data-sources"><span class="ico">⚑</span>Data sources</a>
+    </div>
+    {% if viewer.is_admin %}
+    <div class="nav-group">
+      <div class="nav-group-title">Administration</div>
+      <a class="nav-link {{ 'active' if active == 'admin' }}" href="/admin"><span class="ico">⚙</span>Admin panel</a>
+    </div>
+    {% endif %}
+    <div class="nav-group">
+      <div class="nav-group-title">Legal</div>
+      <a class="nav-link" href="/disclaimer"><span class="ico">⚠</span>Risk disclaimer</a>
+      <a class="nav-link" href="/terms"><span class="ico">§</span>Terms</a>
+    </div>
+  </nav>
+
+  <main class="app-main">
+    {% if flash %}<div class="flash {{ flash.kind }}"><span>{{ flash.message }}</span></div>{% endif %}
+    {% block content %}{% endblock %}
+
+    <div class="disclaimer-strip">
+      <strong>{{ brand.company }} — research and information only.</strong>
+      {{ brand.product }} provides market information, analytics and AI-generated research
+      commentary. It is <strong>not</strong> personal investment advice and takes no account of
+      your objectives or circumstances. {{ brand.company }} does not accept client money, hold
+      securities, execute trades, or manage portfolios, and gives no guarantee of any return.
+      Investing on the Egyptian Exchange carries the risk of losing capital. Verify every figure
+      against the company's own disclosures and the EGX before acting.
+      <a href="/disclaimer">Full risk disclaimer</a> · <a href="/terms">Terms</a> ·
+      <a href="/privacy">Privacy</a>
+    </div>
+  </main>
+</div>
+
+<script src="/static/js/gmg-chart.js"></script>
+<script src="/static/js/gmg.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

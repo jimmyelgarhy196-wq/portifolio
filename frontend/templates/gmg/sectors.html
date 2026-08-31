@@ -1,0 +1,55 @@
+{% extends "gmg/app.html" %}
+{% block title %}EGX Sectors{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Sector performance</h1>
+    <p class="page-sub">Average daily move and breadth by sector, across companies with a quote</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body flush">
+    {% if rows %}
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr>
+          <th>Sector</th><th class="num">Companies</th><th class="num">Quoted</th>
+          <th class="num">Average move</th><th class="num">Advancers</th>
+          <th class="num">Decliners</th><th class="num">Traded value</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>
+            <a href="/stocks?sector={{ row.sector | urlencode }}">{{ row.sector }}</a>
+            {% if row.is_demo %}<span class="badge badge-demo">Demo</span>{% endif %}
+          </td>
+          <td class="num">{{ row.count }}</td>
+          <td class="num">{{ row.covered }}</td>
+          <td class="num">
+            {% if row.average_move is not none %}
+              <span class="chg {{ row.average_move | direction_class }}">{{ row.average_move | fmt_pct(2, 'N/A', true) }}</span>
+            {% else %}<span class="na">N/A</span>{% endif %}
+          </td>
+          <td class="num up">{{ row.advancers }}</td>
+          <td class="num down">{{ row.decliners }}</td>
+          <td class="num">{{ row.turnover | fmt_compact if row.turnover else '—' }}</td>
+          <td style="width:90px">
+            {% if row.covered %}
+            <div class="pct-bar"><i class="{{ 'up' if row.advancers >= row.decliners else 'down' }}"
+              style="width:{{ (100 * row.advancers / row.covered) | round(0, 'floor') }}%"></i></div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">N/A — data unavailable. No sector data could be computed.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

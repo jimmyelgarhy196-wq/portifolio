@@ -1,0 +1,87 @@
+{% extends "gmg/app.html" %}
+{% block title %}{{ ticker }} · {{ company.name }}{% endblock %}
+
+{% block content %}
+{% set q = quote %}
+
+<!-- Price header -------------------------------------------------------- -->
+<div class="card">
+  <div class="card-body">
+    <div class="row wrap" style="align-items:flex-start">
+      <div class="grow" style="min-width:250px">
+        <div class="row wrap mb-8">
+          <h1 class="page-title mb-0">{{ ticker }}</h1>
+          <span class="badge {{ freshness.badge | badge_class }}">{{ freshness.badge }}</span>
+          {% if company.in_egx30 %}<span class="badge badge-gold">EGX 30</span>
+          {% elif company.in_egx70 %}<span class="badge badge-info">EGX 70</span>
+          {% elif company.in_egx100 %}<span class="badge badge-muted">EGX 100</span>{% endif %}
+        </div>
+        <p class="page-sub">
+          {{ company.name }}{% if company.name_ar %} · {{ company.name_ar }}{% endif %}<br>
+          {{ company.sector or 'Sector unclassified' }}
+          {% if company.industry %}· {{ company.industry }}{% endif %}
+          · {{ company.exchange }} · {{ company.currency }}
+        </p>
+      </div>
+
+      <div style="text-align:right;min-width:210px">
+        {% if q and q.price is not none %}
+          <div class="mono" style="font-size:34px;font-weight:750;letter-spacing:-.03em;line-height:1.1">
+            {{ q.price | fmt_price('') }}
+          </div>
+          <div class="mono" style="font-size:15px;font-weight:650" class="{{ q.change_pct | direction_class }}">
+            <span class="chg {{ q.change_pct | direction_class }}">
+              {{ q.change | fmt_num(2, 'N/A') }} ({{ q.change_pct | fmt_pct(2, 'N/A', true) }})
+            </span>
+          </div>
+          <div class="text-xs faint mt-8">{{ freshness.label }}
+            {% if q.quote_time %}· {{ q.quote_time | fmt_dt }}{% endif %}</div>
+        {% else %}
+          <div class="na" style="font-size:17px">N/A — data unavailable</div>
+          <div class="text-xs faint mt-8">No quote is available for {{ ticker }}.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if q %}
+    <div class="tiles g6 mt-16">
+      <div class="tile"><div class="k">Open</div><div class="v sm">{{ q.open | fmt_price('') }}</div></div>
+      <div class="tile"><div class="k">Day high</div><div class="v sm">{{ q.day_high | fmt_price('') }}</div></div>
+      <div class="tile"><div class="k">Day low</div><div class="v sm">{{ q.day_low | fmt_price('') }}</div></div>
+      <div class="tile"><div class="k">Prev close</div><div class="v sm">{{ q.previous_close | fmt_price('') }}</div></div>
+      <div class="tile"><div class="k">Volume</div><div class="v sm">{{ q.volume | fmt_compact }}</div></div>
+      <div class="tile"><div class="k">52-week range</div>
+        <div class="v sm">{{ q.week52_low | fmt_num(2, 'N/A') }} – {{ q.week52_high | fmt_num(2, 'N/A') }}</div></div>
+    </div>
+    {% endif %}
+
+    {% if freshness.is_demo %}
+    <div class="flash warn mt-16 mb-0">
+      <span><strong>DEMO DATA — NOT REAL-TIME.</strong> {{ freshness.detail }}</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Tabs ---------------------------------------------------------------- -->
+<div class="tabs">
+  {% for slug, label, paid in tabs %}
+  <a class="tab {{ 'active' if tab == slug }}" href="/stock/{{ ticker }}?tab={{ slug }}">
+    {{ label }}{% if paid and not entitled %}<span class="lk">🔒</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+{% if locked %}
+  {% include 'gmg/_locked.html' %}
+{% else %}
+  {% include 'gmg/_stock_' + tab + '.html' %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.GMG_TICKER = {{ ticker | tojson }};
+</script>
+<script src="/static/js/gmg-stock.js"></script>
+{% endblock %}

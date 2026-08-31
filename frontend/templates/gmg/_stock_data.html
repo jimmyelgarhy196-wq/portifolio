@@ -1,0 +1,70 @@
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Quote <span class="accent">provider chain</span></h2>
+    <span class="card-meta">the first available provider serves quotes</span></div>
+  <div class="card-body flush">
+    <table class="tbl compact">
+      <thead><tr><th>Provider</th><th>Status</th><th class="num">Delay</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for p in providers %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td>
+          {% if p.is_demo %}<span class="badge badge-demo">Demo data</span>
+          {% elif p.available %}<span class="badge badge-live">Available</span>
+          {% else %}<span class="badge badge-none">Not configured</span>{% endif %}
+        </td>
+        <td class="num">{{ p.delay }} min</td>
+        <td class="text-xs faint">{{ p.note }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Stored price history for {{ ticker }}</h2></div>
+  <div class="card-body flush">
+    {% if bar_sources %}
+    <table class="tbl compact">
+      <thead><tr><th>Source</th><th class="num">Bars stored</th><th>Most recent bar</th></tr></thead>
+      <tbody>
+      {% for source, count, latest in bar_sources %}
+      <tr>
+        <td>{{ source or 'unrecorded' }}
+          {% if source and 'SYNTHETIC' in source | upper %}
+          <span class="badge badge-demo">Generated</span>{% endif %}</td>
+        <td class="num">{{ count }}</td>
+        <td>{{ latest | fmt_date }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">N/A — no price history is stored for {{ ticker }}.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Current quote record</h2></div>
+  <div class="card-body">
+    {% if quote %}
+    <dl class="kv">
+      <dt>Source</dt><dd>{{ quote.source }}</dd>
+      <dt>Quote time</dt><dd>{{ quote.quote_time | fmt_dt }}</dd>
+      <dt>Retrieved</dt><dd>{{ quote.retrieved_at | fmt_dt }}</dd>
+      <dt>Reported delay</dt><dd>{{ quote.delayed_minutes }} minutes</dd>
+      <dt>Market status when quoted</dt><dd>{{ quote.market_status }}</dd>
+      <dt>Demonstration data</dt><dd>{{ 'Yes' if quote.is_demo else 'No' }}</dd>
+    </dl>
+    {% else %}
+    <p class="na mb-0">N/A — no quote record exists for {{ ticker }}.</p>
+    {% endif %}
+  </div>
+  <div class="card-foot">
+    GMG stores the source, timestamp and delay with every quote and shows them here
+    unmodified. Where a figure is unavailable it is labelled N/A and never estimated.
+    <a href="/data-sources">See all GMG data sources</a>.
+  </div>
+</div>

@@ -1,0 +1,127 @@
+{% set a = analysis %}
+<div class="grid g-2-1">
+  <div>
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">Price <span class="accent">history</span></h2>
+        <span class="card-meta">{{ a.price_series | length }} daily bars stored</span>
+      </div>
+      <div class="card-body flush">
+        {% include 'gmg/_chart.html' %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">At a <span class="accent">glance</span></h2></div>
+      <div class="card-body">
+        <div class="tiles g4">
+          <div class="tile"><div class="k">Market cap</div>
+            <div class="v sm">{{ metric_text(a, 'market_cap') }}</div>
+            <div class="s">EGP, shares × last price</div></div>
+          <div class="tile"><div class="k">P/E</div>
+            <div class="v sm">{{ metric_text(a, 'pe') }}</div></div>
+          <div class="tile"><div class="k">P/B</div>
+            <div class="v sm">{{ metric_text(a, 'pb') }}</div></div>
+          <div class="tile"><div class="k">Dividend yield</div>
+            <div class="v sm">{{ metric_text(a, 'dividend_yield') }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    {% if news %}
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Latest <span class="accent">news</span></h2>
+        <a class="card-meta" href="/stock/{{ ticker }}?tab=news">See all</a></div>
+      <div class="card-body flush">
+        <table class="tbl compact">
+          <tbody>
+          {% for item in news[:6] %}
+          <tr>
+            <td class="faint nowrap" style="width:96px">{{ item.publication_date | fmt_date }}</td>
+            <td>{{ item.headline }}<div class="text-xs faint">{{ item.source or 'Source not recorded' }}</div></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">GMG <span class="accent">score</span></h2></div>
+      <div class="card-body center">
+        <div class="score-ring" style="margin:0 auto">
+          <canvas data-score="{{ a.alpha.value if a.alpha.value is not none else '' }}"></canvas>
+          <div class="inner">
+            <div class="n">{{ a.alpha.value | fmt_num(0, 'N/A') }}</div>
+            <div class="l">of 100</div>
+          </div>
+        </div>
+        <p class="text-xs dim mt-16 mb-0">
+          {% if a.alpha.value is none %}
+            N/A — data unavailable. Too little of the underlying data is present to score
+            this company without guessing.
+          {% else %}
+            Composite of fundamental, technical, quantitative, catalyst and risk components.
+            {% if score_delta and score_delta.delta is not none %}
+              <br><span class="{{ score_delta.delta | direction_class }}">
+                {{ score_delta.delta | fmt_num(1, '—', ) }} vs previous run</span>
+            {% endif %}
+          {% endif %}
+        </p>
+      </div>
+      <div class="card-foot">
+        {% for comp in a.alpha.score.components %}
+        <div class="subscore {{ '' if comp.available else 'missing' }}">
+          <div class="row"><span class="lbl">{{ comp.name | replace('_', ' ') | title }}</span>
+            <span class="val">{{ comp.value | fmt_num(0, 'N/A') }}</span>
+            <span class="wt">{{ comp.weight | fmt_num(0) }}%</span></div>
+          <div class="track"><i class="fill" style="width:{{ comp.value if comp.available else 0 }}%"></i></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if valuation %}
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Valuation <span class="accent">summary</span></h2></div>
+      <div class="card-body">
+        {% if valuation.fair_value %}
+        <dl class="kv">
+          <dt>Blended fair value</dt><dd>{{ valuation.fair_value | fmt_price('') }}</dd>
+          <dt>Current price</dt><dd>{{ valuation.current_price | fmt_price('') }}</dd>
+          <dt>Implied upside</dt>
+          <dd class="{{ valuation.upside | direction_class }}">{{ valuation.upside | fmt_pct(1, 'N/A', true) }}</dd>
+          <dt>Methods used</dt><dd>{{ valuation.method_count }}</dd>
+          <dt>Range</dt><dd>{{ valuation.low | fmt_num(2) }} – {{ valuation.high | fmt_num(2) }}</dd>
+        </dl>
+        <p class="text-xs faint mt-16 mb-0">{{ valuation.note }}</p>
+        {% else %}
+        <p class="na mb-0">{{ valuation.note }}</p>
+        {% endif %}
+      </div>
+      <div class="card-foot"><a href="/stock/{{ ticker }}?tab=valuation">Open the valuation model →</a></div>
+    </div>
+    {% endif %}
+
+    {% if watchlists %}
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Watchlists</h2></div>
+      <div class="card-body">
+        {% for wl in watchlists %}
+        <form method="post" action="/watchlists/{{ wl.id }}/toggle" class="row mb-8">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="ticker" value="{{ ticker }}">
+          <span class="grow text-sm">{{ wl.name }}</span>
+          <button class="btn btn-sm {{ 'btn-ghost' if wl.id in in_watchlists else '' }}" type="submit">
+            {{ 'Remove' if wl.id in in_watchlists else 'Add' }}
+          </button>
+        </form>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>

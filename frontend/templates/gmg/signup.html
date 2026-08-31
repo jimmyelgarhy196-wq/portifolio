@@ -1,0 +1,56 @@
+{% extends "gmg/auth.html" %}
+{% block title %}Create your account{% endblock %}
+{% block content %}
+<h1>Create your account</h1>
+<p class="sub">
+  {{ plan.trial_days }}-day free trial, then EGP {{ plan.price_egp | fmt_num(0) }} per
+  {{ plan.interval }}. No card is required to start.
+</p>
+
+<form method="post" action="/signup" novalidate>
+  <div class="field">
+    <label for="full_name">Full name</label>
+    <input id="full_name" type="text" name="full_name" value="{{ form.full_name or '' }}"
+           autocomplete="name">
+  </div>
+  <div class="field">
+    <label for="email">Email address</label>
+    <input id="email" type="email" name="email" value="{{ form.email or '' }}"
+           class="{{ 'invalid' if errors.email }}" autocomplete="email" required>
+    {% if errors.email %}<span class="err">{{ errors.email }}</span>{% endif %}
+  </div>
+  <div class="field">
+    <label for="password">Password</label>
+    <input id="password" type="password" name="password"
+           class="{{ 'invalid' if errors.password }}" autocomplete="new-password" required>
+    {% if errors.password %}<span class="err">{{ errors.password }}</span>
+    {% else %}<span class="hint">At least 10 characters. Avoid your email address and common words.</span>{% endif %}
+  </div>
+  <div class="field">
+    <label for="confirm_password">Confirm password</label>
+    <input id="confirm_password" type="password" name="confirm_password"
+           class="{{ 'invalid' if errors.confirm_password }}" autocomplete="new-password" required>
+    {% if errors.confirm_password %}<span class="err">{{ errors.confirm_password }}</span>{% endif %}
+  </div>
+
+  <label class="check">
+    <input type="checkbox" name="accept_terms" value="1">
+    <span>I have read and accept the <a href="/terms" target="_blank">Terms of Service</a>,
+      the <a href="/privacy" target="_blank">Privacy Policy</a> and the
+      <a href="/disclaimer" target="_blank">Investment Disclaimer</a>. I understand
+      {{ brand.company }} provides research and information only, never personal investment
+      advice, and never holds my money or securities.</span>
+  </label>
+  {% if errors.accept_terms %}<div class="err mb-16">{{ errors.accept_terms }}</div>{% endif %}
+
+  <label class="check">
+    <input type="checkbox" name="marketing_opt_in" value="1"
+           {{ 'checked' if form.marketing_opt_in }}>
+    <span>Email me the weekly GMG EGX Intelligence report and product updates.</span>
+  </label>
+
+  <button class="btn btn-primary btn-block btn-lg" type="submit">Create account</button>
+</form>
+{% endblock %}
+
+{% block foot %}Already have an account? <a href="/login">Sign in</a>{% endblock %}

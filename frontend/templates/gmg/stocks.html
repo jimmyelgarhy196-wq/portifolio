@@ -1,0 +1,96 @@
+{% extends "gmg/app.html" %}
+{% block title %}EGX Stocks{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">EGX stocks</h1>
+    <p class="page-sub">{{ rows | length }} companies · click any ticker for the full research page</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="get" action="/stocks" class="form-row">
+      <div class="field">
+        <label for="q">Search</label>
+        <input id="q" type="search" name="q" value="{{ q }}" placeholder="Ticker or company">
+      </div>
+      <div class="field">
+        <label for="index">Index</label>
+        <select id="index" name="index">
+          <option value="">All listed</option>
+          {% for code in ['EGX30', 'EGX70', 'EGX100'] %}
+          <option value="{{ code }}" {{ 'selected' if index == code }}>{{ code }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="sector">Sector</label>
+        <select id="sector" name="sector">
+          <option value="">All sectors</option>
+          {% for s in sectors %}
+          <option value="{{ s }}" {{ 'selected' if sector == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="sort">Sort by</label>
+        <select id="sort" name="sort">
+          <option value="ticker" {{ 'selected' if sort == 'ticker' }}>Ticker</option>
+          <option value="name" {{ 'selected' if sort == 'name' }}>Company</option>
+          <option value="change" {{ 'selected' if sort == 'change' }}>Daily change</option>
+          <option value="turnover" {{ 'selected' if sort == 'turnover' }}>Traded value</option>
+          <option value="volume" {{ 'selected' if sort == 'volume' }}>Volume</option>
+          <option value="price" {{ 'selected' if sort == 'price' }}>Price</option>
+        </select>
+      </div>
+      <div class="field"><label>&nbsp;</label>
+        <button class="btn btn-primary" type="submit">Apply</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body flush">
+    {% if rows %}
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr>
+          <th>Ticker</th><th>Company</th><th class="hide-sm">Sector</th>
+          <th class="hide-sm">Index</th>
+          <th class="num">Price</th><th class="num">Change</th>
+          <th class="num hide-sm">Volume</th><th class="num hide-sm">Value</th>
+          <th class="hide-sm">Data</th>
+        </tr></thead>
+        <tbody>
+        {% for row in rows %}
+        {% set c = row.company %}{% set qte = row.quote %}
+        <tr>
+          <td><a class="tk" href="/stock/{{ c.ticker }}">{{ c.ticker }}</a></td>
+          <td class="nm">{{ c.name }}</td>
+          <td class="nm hide-sm">{{ c.sector or '—' }}</td>
+          <td class="hide-sm text-xs faint">
+            {% if c.in_egx30 %}EGX30{% elif c.in_egx70 %}EGX70{% elif c.in_egx100 %}EGX100{% else %}—{% endif %}
+          </td>
+          <td class="num">{{ qte.price | fmt_price('') if qte else 'N/A' }}</td>
+          <td class="num">
+            {% if qte and qte.change_pct is not none %}
+              <span class="chg {{ qte.change_pct | direction_class }}">{{ qte.change_pct | fmt_pct(2, 'N/A', true) }}</span>
+            {% else %}<span class="na">N/A</span>{% endif %}
+          </td>
+          <td class="num hide-sm">{{ qte.volume | fmt_compact if qte else '—' }}</td>
+          <td class="num hide-sm">{{ qte.turnover | fmt_compact if qte else '—' }}</td>
+          <td class="hide-sm"><span class="badge {{ row.freshness.badge | badge_class }}">{{ row.freshness.badge }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><span class="ico">⌕</span>No company matches those filters.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

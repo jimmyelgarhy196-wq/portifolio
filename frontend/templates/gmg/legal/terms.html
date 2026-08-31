@@ -1,0 +1,124 @@
+{% extends "gmg/legal/_base.html" %}
+{% block document %}
+<div class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li>Who we are</li><li>What the service is</li><li>What the service is not</li>
+    <li>Eligibility and your account</li><li>Subscription and payment</li>
+    <li>Acceptable use</li><li>Data, accuracy and availability</li>
+    <li>Intellectual property</li><li>Limitation of liability</li>
+    <li>Suspension and termination</li><li>Changes</li><li>Governing law</li>
+  </ol>
+</div>
+
+<h2>1. Who we are</h2>
+<p>{{ brand.product }} (“the Service”) is operated by {{ brand.company }} (“{{ brand.short }}”,
+“we”, “us”). We are a technology and research company. Contact details are on our
+<a href="/contact">contact page</a>.</p>
+
+<h2>2. What the service is</h2>
+<p>The Service provides:</p>
+<ul>
+  <li>Market information about securities listed on the Egyptian Exchange (EGX);</li>
+  <li>Analytics computed from that information, including scores, ratios and valuation models;</li>
+  <li>Written research commentary, some of which is generated with the assistance of
+      artificial intelligence and is labelled as such;</li>
+  <li>Personal tools such as watchlists, a holdings tracker, a screener and alerts.</li>
+</ul>
+<p>All of it is provided for <strong>information and research purposes only</strong>.</p>
+
+<h2>3. What the service is not</h2>
+<p>This section is the most important in this document.</p>
+<ul>
+  <li><strong>Not personal investment advice.</strong> Nothing on the Service is a personal
+      recommendation. We do not know your objectives, financial situation, tax position or
+      risk tolerance, and nothing we publish takes them into account.</li>
+  <li><strong>Not a broker or dealer.</strong> We do not execute orders, route orders, or
+      act as an intermediary in any securities transaction.</li>
+  <li><strong>Not a custodian.</strong> We never hold your money and never hold your
+      securities. The portfolio feature records information <em>you enter</em> so it can be
+      valued; it holds nothing.</li>
+  <li><strong>Not a portfolio manager or fund.</strong> We do not manage money for clients
+      and do not operate any collective investment scheme.</li>
+  <li><strong>Not a guarantee.</strong> We do not promise, guarantee or forecast any return,
+      profit, income or performance, and no part of the Service should be read as doing so.</li>
+</ul>
+<p>{{ brand.company }} is <strong>not licensed or registered</strong> as a financial adviser,
+portfolio manager, securities brokerage or investment fund by the Egyptian Financial
+Regulatory Authority (FRA) or by any other regulator, and we make no such claim.</p>
+
+<h2>4. Eligibility and your account</h2>
+<ul>
+  <li>You must be at least 18 years old and legally able to enter a contract.</li>
+  <li>You are responsible for the accuracy of the information you give us and for keeping
+      your password confidential.</li>
+  <li>Your account is personal to you. Do not share your login. We may suspend accounts
+      that appear to be shared or resold.</li>
+  <li>You must tell us promptly if you believe your account has been accessed without your
+      permission.</li>
+</ul>
+
+<h2>5. Subscription and payment</h2>
+<p>Subscription pricing, billing and cancellation are described in the
+<a href="/subscription-terms">Subscription Terms</a> and the
+<a href="/refund-policy">Refund Policy</a>, which form part of these Terms.</p>
+
+<h2>6. Acceptable use</h2>
+<p>You agree not to:</p>
+<ul>
+  <li>Scrape, bulk-download, resell, redistribute or republish data or research obtained
+      from the Service, except for your own personal use;</li>
+  <li>Share your account credentials or provide access to people who have not subscribed;</li>
+  <li>Attempt to bypass access controls, rate limits or payment requirements;</li>
+  <li>Reverse engineer the Service, or use automated systems to place unreasonable load on it;</li>
+  <li>Use the Service to break any applicable law, including securities law and market-abuse
+      rules.</li>
+</ul>
+
+<h2>7. Data, accuracy and availability</h2>
+<p>We label market data with its source, its timestamp and any delay, and we mark data as
+unavailable rather than estimating it. Even so:</p>
+<ul>
+  <li>Data may be delayed, incomplete, or wrong, including because a third-party source was
+      wrong;</li>
+  <li>Analytics and scores are computed from that data and inherit its limitations;</li>
+  <li>Research commentary, including AI-assisted commentary, may contain errors;</li>
+  <li>The Service may be unavailable for maintenance or for reasons outside our control.</li>
+</ul>
+<p><strong>Always verify any figure against the company's own published financial statements
+and the Egyptian Exchange's official disclosures before acting on it.</strong></p>
+
+<h2>8. Intellectual property</h2>
+<p>The Service, its software, design, analytics methods and written research are owned by
+{{ brand.company }} and protected by law. Your subscription grants you a personal,
+non-exclusive, non-transferable right to use the Service while it is active. Underlying market
+data remains the property of its respective sources.</p>
+
+<h2>9. Limitation of liability</h2>
+<p>To the fullest extent permitted by applicable Egyptian law:</p>
+<ul>
+  <li>The Service is provided “as is”, without warranty of accuracy, completeness or fitness
+      for a particular purpose;</li>
+  <li>We are not liable for investment losses, lost profits, or any indirect or consequential
+      loss arising from your use of, or reliance on, the Service;</li>
+  <li>Where liability cannot lawfully be excluded, our total liability to you is limited to
+      the subscription fees you paid us in the twelve months before the claim arose.</li>
+</ul>
+<p>Nothing in these Terms excludes liability that cannot lawfully be excluded, including
+liability for fraud.</p>
+
+<h2>10. Suspension and termination</h2>
+<p>You may cancel at any time from your account page. We may suspend or terminate access if
+you breach these Terms, if payment fails, or if we are required to do so by law. On
+termination your right to use the Service ends; provisions that by their nature survive
+(including sections 3, 7, 8, 9 and 12) continue to apply.</p>
+
+<h2>11. Changes</h2>
+<p>We may update these Terms. Where a change materially affects your rights we will notify
+you by email or in the application before it takes effect. Continuing to use the Service after
+that date means you accept the change.</p>
+
+<h2>12. Governing law</h2>
+<p>These Terms are governed by the laws of the Arab Republic of Egypt, and the courts of Egypt
+have jurisdiction over any dispute arising from them.</p>
+{% endblock %}

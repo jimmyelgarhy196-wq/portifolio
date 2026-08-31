@@ -1,0 +1,27 @@
+<div class="chart-shell" id="gmgChart">
+  <div class="chart-toolbar">
+    {% for tf in ['1M', '3M', '6M', 'YTD', '1Y', '5Y', 'MAX'] %}
+    <button class="tf-btn {{ 'active' if tf == '1Y' }}" data-tf="{{ tf }}">{{ tf }}</button>
+    {% endfor %}
+    <span class="sep"></span>
+    <button class="ind-btn active" data-ind="candle">Candles</button>
+    <button class="ind-btn" data-ind="line">Line</button>
+    <button class="ind-btn" data-ind="area">Area</button>
+    <span class="sep"></span>
+    <button class="ind-btn" data-ind="sma20">SMA 20</button>
+    <button class="ind-btn active" data-ind="sma50">SMA 50</button>
+    <button class="ind-btn active" data-ind="sma200">SMA 200</button>
+    <button class="ind-btn" data-ind="bb">Bollinger</button>
+    <span class="sep"></span>
+    <button class="ind-btn" data-ind="rsi">RSI</button>
+    <button class="ind-btn" data-ind="macd">MACD</button>
+  </div>
+  <div class="chart-canvas-wrap">
+    <div class="chart-readout"></div>
+    <canvas class="price"></canvas>
+    <canvas class="volume"></canvas>
+    <canvas class="pane" style="display:none"></canvas>
+  </div>
+  <div class="chart-empty" style="display:none">Loading price history…</div>
+  <div class="card-foot" id="chartSource">Price history source: loading…</div>
+</div>

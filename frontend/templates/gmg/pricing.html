@@ -1,0 +1,71 @@
+{% extends "gmg/public.html" %}
+{% block title %}Pricing — {{ brand.product }}{% endblock %}
+
+{% block body %}
+<section class="section">
+  <div class="section-narrow">
+    <div class="section-head">
+      <h2>Simple, single-plan pricing</h2>
+      <p>Full access to {{ brand.product }} for EGP {{ plan.price_egp | fmt_num(0) }} per
+      {{ plan.interval }}, starting with a {{ plan.trial_days }}-day free trial.</p>
+    </div>
+
+    <div class="price-card">
+      <div class="plan-name">{{ plan.name }}</div>
+      <div class="amount">EGP {{ plan.price_egp | fmt_num(0) }}<small> / {{ plan.interval }}</small></div>
+      <div class="per">Billed monthly · cancel any time · access continues to the end of the paid period</div>
+      <ul class="plan-features">
+        {% for feature in plan.features %}<li>{{ feature }}</li>{% endfor %}
+      </ul>
+      <a class="btn btn-primary btn-block btn-lg" href="/signup">Start {{ plan.trial_days }}-day free trial</a>
+    </div>
+
+    <div class="grid g2 mt-24" style="max-width:900px;margin-left:auto;margin-right:auto">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">How payment works</h3></div>
+        <div class="card-body">
+          {% if payments.processes_payments %}
+          <p class="text-sm dim mb-0">
+            Payments are processed by {{ payments.display_name }}. Your card details are
+            handled by the payment provider and are never stored by {{ brand.company }}.
+          </p>
+          {% else %}
+          <p class="text-sm dim">
+            <strong>No payment gateway is connected to this deployment yet.</strong>
+            You can create an account and use the free trial now. When you request a
+            subscription, your intent is recorded and <strong>no card is charged</strong>;
+            an administrator confirms payment made by bank transfer or another agreed method
+            and activates your access.
+          </p>
+          <p class="text-sm dim mb-0">
+            {{ brand.company }} does not operate a fake or simulated checkout, and will not
+            take card details until a licensed Egyptian payment provider is connected.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Cancelling</h3></div>
+        <div class="card-body">
+          <p class="text-sm dim">
+            Cancel from your account page at any time. Your access continues until the end
+            of the period you have already paid for, and the subscription simply does not
+            renew.
+          </p>
+          <p class="text-sm dim mb-0">
+            See the <a href="/subscription-terms">subscription terms</a> and the
+            <a href="/refund-policy">refund policy</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout risk mt-24" style="max-width:900px;margin-left:auto;margin-right:auto">
+      <strong>What your subscription buys.</strong> Access to market information, analytics
+      and research commentary. It does <strong>not</strong> buy investment advice, portfolio
+      management, trade execution, or any promise of profit. {{ brand.company }} never holds
+      your money or your securities.
+    </div>
+  </div>
+</section>
+{% endblock %}

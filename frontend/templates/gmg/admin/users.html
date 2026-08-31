@@ -1,0 +1,46 @@
+{% extends "gmg/app.html" %}
+{% block title %}Admin · Users{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow"><h1 class="page-title">Users</h1>
+    <p class="page-sub">{{ users | length }} accounts shown</p></div>
+  <a class="btn btn-sm btn-ghost" href="/admin">Back to admin</a>
+</div>
+
+<div class="card"><div class="card-body">
+  <form method="get" action="/admin/users" class="form-row">
+    <div class="field"><label for="q">Search email</label>
+      <input id="q" type="search" name="q" value="{{ q }}"></div>
+    <div class="field"><label for="status">Status</label>
+      <select id="status" name="status">
+        <option value="">Any</option>
+        {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label>&nbsp;</label><button class="btn btn-primary" type="submit">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="card-body flush">
+  <div class="tbl-scroll">
+    <table class="tbl">
+      <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Status</th>
+        <th>Verified</th><th>Subscription</th><th>Joined</th><th>Last sign-in</th></tr></thead>
+      <tbody>
+      {% for u in users %}
+      {% set sub = subscriptions.get(u.id) %}
+      <tr>
+        <td><a href="/admin/users/{{ u.id }}">{{ u.email }}</a></td>
+        <td class="nm">{{ u.full_name or '—' }}</td>
+        <td>{% if u.is_admin %}<span class="badge badge-info">Admin</span>{% else %}<span class="text-xs faint">User</span>{% endif %}</td>
+        <td><span class="badge {{ 'badge-live' if u.status == 'ACTIVE' else 'badge-down' }}">{{ u.status }}</span></td>
+        <td>{% if u.email_verified %}✓{% else %}<span class="faint">—</span>{% endif %}</td>
+        <td class="text-xs">{{ sub.status if sub else '—' }}</td>
+        <td class="text-xs faint">{{ u.created_at | fmt_date }}</td>
+        <td class="text-xs faint">{{ u.last_login_at | fmt_dt('%d %b %Y', 'never') }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}

@@ -1,0 +1,45 @@
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Sector <span class="accent">peers</span></h2>
+    <span class="card-meta">{{ company.sector or 'Unclassified' }} · {{ peers | length }} companies</span>
+  </div>
+  <div class="card-body flush">
+    {% if peers %}
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr>
+          <th>Ticker</th><th>Company</th>
+          <th class="num">Price</th><th class="num">Change</th>
+          <th class="num">GMG score</th><th class="num hide-sm">Traded value</th>
+        </tr></thead>
+        <tbody>
+        {% for p in peers %}
+        <tr>
+          <td><a class="tk" href="/stock/{{ p.company.ticker }}">{{ p.company.ticker }}</a></td>
+          <td class="nm">{{ p.company.name }}</td>
+          <td class="num">{{ p.quote.price | fmt_price('') if p.quote else 'N/A' }}</td>
+          <td class="num">
+            {% if p.quote and p.quote.change_pct is not none %}
+            <span class="chg {{ p.quote.change_pct | direction_class }}">{{ p.quote.change_pct | fmt_pct(2, 'N/A', true) }}</span>
+            {% else %}<span class="na">N/A</span>{% endif %}
+          </td>
+          <td class="num">
+            {% if p.score and p.score.alpha_score is not none %}
+            <span class="score-chip {{ p.score.alpha_score | score_class }}">{{ p.score.alpha_score | fmt_num(0) }}</span>
+            {% else %}<span class="score-chip score-na">N/A</span>{% endif %}
+          </td>
+          <td class="num hide-sm">{{ p.quote.turnover | fmt_compact if p.quote else '—' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">No other company in this sector is currently covered.</div>
+    {% endif %}
+  </div>
+  <div class="card-foot">
+    A blank GMG score means the company has not been scored — usually because too little
+    of its financial data is stored. It is never shown as zero.
+  </div>
+</div>

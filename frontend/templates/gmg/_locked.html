@@ -1,0 +1,17 @@
+<div class="locked">
+  <div class="lock-ico">🔒</div>
+  <h3>This is part of {{ brand.product }}</h3>
+  <p>
+    Fundamental scoring, valuation models, technical analysis and AI research are included
+    with a GMG subscription — EGP {{ plan.price_egp | fmt_num(0) }} per {{ plan.interval }},
+    with a {{ plan.trial_days }}-day free trial.
+  </p>
+  <div class="row" style="justify-content:center">
+    <a class="btn btn-primary" href="/account/subscription">View subscription</a>
+    <a class="btn btn-ghost" href="/pricing">See what is included</a>
+  </div>
+  <p class="text-xs faint mt-16 mb-0">
+    Access is checked on the {{ brand.short }} server. This content is not sent to your
+    browser until your subscription is active.
+  </p>
+</div>

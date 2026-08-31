@@ -1,0 +1,41 @@
+{% extends "gmg/app.html" %}
+{% block title %}Weekly reports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">GMG EGX Intelligence</h1>
+    <p class="page-sub">Weekly research reports · {{ reports | length }} published</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body flush">
+    {% if reports %}
+    <table class="tbl">
+      <thead><tr><th>Published</th><th>Report</th><th>Period</th><th></th></tr></thead>
+      <tbody>
+      {% for r in reports %}
+      <tr>
+        <td class="nowrap">{{ r.created_at | fmt_date }}</td>
+        <td>
+          <a href="/reports/{{ r.report_id if r.report_id is defined else r.id }}">{{ r.title }}</a>
+          {% if r.contains_synthetic %}<span class="badge badge-demo">Contains demo data</span>{% endif %}
+        </td>
+        <td class="text-xs faint">
+          {% if r.period_start %}{{ r.period_start | fmt_date }} – {{ r.period_end | fmt_date }}{% else %}—{% endif %}
+        </td>
+        <td><a class="btn btn-sm" href="/reports/{{ r.report_id if r.report_id is defined else r.id }}">Read</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+      <span class="ico">▤</span>
+      No report has been generated yet. Run <code>python scripts/weekly_run.py</code>
+      to produce one.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

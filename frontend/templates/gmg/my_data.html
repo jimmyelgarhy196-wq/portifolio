@@ -1,0 +1,77 @@
+{% extends "gmg/app.html" %}
+{% block title %}Data we hold about you{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Data we hold about you</h1>
+    <p class="page-sub">Everything {{ brand.company }} stores against {{ user.email }}</p>
+  </div>
+</div>
+
+<div class="callout gold">
+  <strong>What we do not hold.</strong> We never store your plaintext password — only an
+  Argon2id hash, which cannot be reversed. We never store card numbers. We do not sell your
+  data and we run no third-party analytics or advertising trackers.
+  To request deletion, <a href="/contact">contact us</a>.
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Account record</h2></div>
+  <div class="card-body">
+    <dl class="kv">
+      <dt>Email</dt><dd>{{ user.email }}</dd>
+      <dt>Name</dt><dd>{{ user.full_name or 'not given' }}</dd>
+      <dt>Role</dt><dd>{{ user.role }}</dd>
+      <dt>Status</dt><dd>{{ user.status }}</dd>
+      <dt>Created</dt><dd>{{ user.created_at | fmt_dt }}</dd>
+      <dt>Email verified</dt><dd>{{ user.email_verified_at | fmt_dt('%d %b %Y, %H:%M', 'not verified') }}</dd>
+      <dt>Last sign-in</dt><dd>{{ user.last_login_at | fmt_dt }}</dd>
+      <dt>Last sign-in IP</dt><dd>{{ user.last_login_ip or '—' }}</dd>
+      <dt>Marketing emails</dt><dd>{{ 'Yes' if user.marketing_opt_in else 'No' }}</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Emails we sent you</h2></div>
+    <div class="card-body flush">
+      {% if emails %}
+      <table class="tbl compact">
+        <thead><tr><th>Sent</th><th>Type</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for e in emails %}
+        <tr>
+          <td class="faint nowrap">{{ e.created_at | fmt_dt }}</td>
+          <td>{{ e.template | replace('_', ' ') }}</td>
+          <td><span class="badge {{ 'badge-live' if e.status == 'SENT' else 'badge-down' }}">{{ e.status }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<div class="empty">No emails recorded.</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Account events</h2></div>
+    <div class="card-body flush">
+      {% if audit %}
+      <div class="tbl-scroll tall">
+        <table class="tbl compact">
+          <tbody>
+          {% for event in audit %}
+          <tr>
+            <td class="faint nowrap">{{ event.created_at | fmt_dt }}</td>
+            <td>{{ event.action | replace('_', ' ') }}</td>
+            <td class="mono text-xs faint">{{ event.ip or '' }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}<div class="empty">No events recorded.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

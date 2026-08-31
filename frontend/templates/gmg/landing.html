@@ -1,0 +1,162 @@
+{% extends "gmg/public.html" %}
+{% block title %}{{ brand.product }} — {{ brand.tagline }}{% endblock %}
+
+{% block body %}
+<section class="hero">
+  <span class="eyebrow">◆ {{ brand.company }}</span>
+  <h1>Institutional-grade research for the <span class="grad">Egyptian Exchange</span></h1>
+  <p class="lede">
+    {{ brand.product }} brings EGX market data, fundamental and technical scoring,
+    valuation models and AI-assisted research into one professional workspace —
+    with the source, timestamp and limits of every number shown on the screen.
+  </p>
+  <div class="cta">
+    <a class="btn btn-primary btn-lg" href="/signup">Start your {{ plan.trial_days }}-day free trial</a>
+    <a class="btn btn-ghost btn-lg" href="/pricing">See pricing</a>
+  </div>
+  <p class="fineprint">
+    EGP {{ plan.price_egp | fmt_num(0) }} per {{ plan.interval }} after the trial · no card required to start ·
+    cancel any time
+  </p>
+</section>
+
+<section class="section" id="platform">
+  <div class="section-narrow">
+    <div class="section-head">
+      <h2>Everything you need to research an EGX company</h2>
+      <p>Six engines, one page per stock, and a straight answer when the data is not there.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="ico">◧</div>
+        <h3>Market dashboard</h3>
+        <p>EGX 30, EGX 70 and EGX 100 with constituent breadth, top gainers and losers,
+        most active by traded value, advancers against decliners, and total market turnover.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">▤</div>
+        <h3>Fundamental analysis</h3>
+        <p>Growth, profitability, balance sheet, cash flow, valuation and dividend
+        sub-scores, each with the exact inputs that produced it and the weight it carried.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">◉</div>
+        <h3>Professional charts</h3>
+        <p>Candlesticks with volume, 1M to MAX timeframes, moving averages, Bollinger
+        bands, RSI and MACD — rendered in your browser, with no third-party tracking.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">∑</div>
+        <h3>Valuation models</h3>
+        <p>A two-stage discounted cash flow you can re-run with your own assumptions,
+        a sensitivity grid, and fair value from sector and own-history multiples.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">◆</div>
+        <h3>AI research</h3>
+        <p>A rating, a confidence level, an investment horizon and a stock category —
+        derived by fixed rules from the scores, with the reasons and the limits stated.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">⌗</div>
+        <h3>Screener &amp; watchlists</h3>
+        <p>Screen the market on nineteen criteria, save your screens, track unlimited
+        watchlists, and set price, RSI and moving-average alerts delivered by email.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--bg-deep);border-block:1px solid var(--border)">
+  <div class="section-narrow">
+    <div class="section-head">
+      <h2>Built to tell you the truth about its own data</h2>
+      <p>Most retail platforms hide where their numbers come from. This one cannot.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="ico">⚑</div>
+        <h3>Every price is labelled</h3>
+        <p>Live, delayed, end-of-day or demonstration — shown as a badge on the number
+        itself, with the source, the timestamp and the exact delay in minutes.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">∅</div>
+        <h3>Missing data says so</h3>
+        <p>Where a figure is unavailable you see “N/A — data unavailable”, never a zero,
+        never an estimate quietly dressed up as a reported number.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">⚖</div>
+        <h3>No invented figures</h3>
+        <p>Financial statements are shown as filed. AI commentary is separated from the
+        figures, and a rating is withheld when the data behind it is too thin.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-narrow" style="max-width:820px">
+    <div class="section-head">
+      <h2>What {{ brand.company }} is — and is not</h2>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title" style="color:var(--up)">What we do</h3></div>
+        <div class="card-body">
+          <ul class="text-sm dim" style="padding-left:18px;line-height:1.9">
+            <li>Publish EGX market data with its source and freshness</li>
+            <li>Compute fundamental, technical and composite scores</li>
+            <li>Provide valuation tools you control</li>
+            <li>Publish research commentary and a weekly EGX report</li>
+            <li>Let you track your own watchlists and holdings</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3 class="card-title" style="color:var(--down)">What we never do</h3></div>
+        <div class="card-body">
+          <ul class="text-sm dim" style="padding-left:18px;line-height:1.9">
+            <li>Accept or hold your money</li>
+            <li>Hold your securities or act as a broker</li>
+            <li>Execute trades or manage a portfolio for you</li>
+            <li>Give personal investment advice</li>
+            <li>Guarantee or promise any return</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="callout risk mt-24">
+      <strong>Risk warning.</strong> Investing in listed securities involves risk, including
+      the loss of the capital you invest. Past performance does not indicate future results.
+      {{ brand.company }} is not licensed or registered as a financial adviser, portfolio
+      manager, brokerage or fund by the Egyptian Financial Regulatory Authority or any other
+      regulator, and makes no such claim.
+      <a href="/risk-disclosure">Read the full risk disclosure</a>.
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--bg-deep);border-top:1px solid var(--border)">
+  <div class="section-narrow">
+    <div class="section-head">
+      <h2>One plan. Everything included.</h2>
+      <p>No tiers, no add-ons, no per-report charges.</p>
+    </div>
+    <div class="price-card">
+      <div class="plan-name">{{ plan.name }}</div>
+      <div class="amount">EGP {{ plan.price_egp | fmt_num(0) }}<small> / {{ plan.interval }}</small></div>
+      <div class="per">{{ plan.trial_days }}-day free trial · cancel any time</div>
+      <ul class="plan-features">
+        {% for feature in plan.features %}<li>{{ feature }}</li>{% endfor %}
+      </ul>
+      <a class="btn btn-primary btn-block btn-lg" href="/signup">Start free trial</a>
+      <p class="text-xs faint center mt-16 mb-0">
+        Payment is taken by an Egyptian payment provider once connected.
+        {{ brand.company }} never stores your card details.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

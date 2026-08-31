@@ -1,0 +1,97 @@
+{% extends "gmg/legal/_base.html" %}
+{% block document %}
+<h2>1. Who controls your data</h2>
+<p>{{ brand.company }} is the controller of the personal data described here. You can reach
+us through our <a href="/contact">contact page</a>.</p>
+
+<h2>2. What we collect</h2>
+<h3>Information you give us</h3>
+<ul>
+  <li>Your email address and password (stored only as an Argon2id hash — we never store or
+      can recover your plaintext password);</li>
+  <li>Your name, if you provide it;</li>
+  <li>Your marketing preference;</li>
+  <li>Content you create: watchlists, portfolio entries, saved screens, alerts, and messages
+      you send us.</li>
+</ul>
+<h3>Information collected automatically</h3>
+<ul>
+  <li>Sign-in records: time, IP address and browser user-agent, kept so you can see your own
+      sessions and so we can detect unauthorised access;</li>
+  <li>Failed sign-in attempts, kept to enforce rate limits and lockouts;</li>
+  <li>An audit log of account and subscription events;</li>
+  <li>A log of emails we sent you and whether they succeeded.</li>
+</ul>
+<h3>What we do not collect</h3>
+<ul>
+  <li><strong>We do not store card numbers.</strong> Where a payment provider is connected,
+      card details are handled by that provider and never reach our servers.</li>
+  <li>We do not use third-party advertising or analytics trackers on the application.</li>
+  <li>We do not sell personal data to anyone, ever.</li>
+</ul>
+
+<h2>3. Why we use it, and on what basis</h2>
+<table class="tbl compact" style="margin:14px 0">
+  <thead><tr><th>Purpose</th><th>Data used</th><th>Basis</th></tr></thead>
+  <tbody>
+    <tr><td>Providing the Service</td><td>Account, content</td><td>Performance of our contract with you</td></tr>
+    <tr><td>Billing and subscription management</td><td>Account, payment records</td><td>Performance of our contract</td></tr>
+    <tr><td>Security, fraud and abuse prevention</td><td>Sign-in records, IP, audit log</td><td>Our legitimate interest in a secure service</td></tr>
+    <tr><td>Service emails (verification, receipts, alerts you set)</td><td>Email address</td><td>Performance of our contract</td></tr>
+    <tr><td>Marketing emails and the weekly report</td><td>Email address</td><td>Your consent — withdrawable at any time</td></tr>
+    <tr><td>Legal and tax record-keeping</td><td>Payment records</td><td>Legal obligation</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Who we share it with</h2>
+<p>Only the providers needed to run the Service, and only what they need:</p>
+<ul>
+  <li>The email provider that delivers our messages;</li>
+  <li>The payment provider, once one is connected, which handles payment data directly;</li>
+  <li>Our hosting provider, which stores the database;</li>
+  <li>Authorities, where we are legally required to disclose.</li>
+</ul>
+
+<h2>5. How long we keep it</h2>
+<ul>
+  <li>Account data: while your account exists, then deleted or anonymised within 90 days of
+      a deletion request;</li>
+  <li>Sign-in and audit records: up to 24 months, for security;</li>
+  <li>Payment and invoice records: as long as tax and accounting law requires;</li>
+  <li>Email logs: 12 months.</li>
+</ul>
+
+<h2>6. Your rights</h2>
+<p>You can ask us to:</p>
+<ul>
+  <li>Give you a copy of the personal data we hold about you;</li>
+  <li>Correct data that is wrong — you can edit most of it yourself on your account page;</li>
+  <li>Delete your account and personal data, subject to records we must keep by law;</li>
+  <li>Stop sending marketing email — either from your account page or by replying to us;</li>
+  <li>Object to or restrict certain processing.</li>
+</ul>
+<p>Your account page shows the sign-in records, audit events and emails we hold for you, and
+lets you sign out every session. To request deletion, <a href="/contact">contact us</a>.</p>
+
+<h2>7. Security</h2>
+<ul>
+  <li>Passwords are hashed with Argon2id, a memory-hard algorithm, and are never logged;</li>
+  <li>Session tokens are stored only as SHA-256 digests, so a database copy does not yield
+      usable sessions;</li>
+  <li>Session cookies are HTTP-only and, in production, Secure and SameSite;</li>
+  <li>Changing your password invalidates every existing session;</li>
+  <li>Access to paid features is enforced on the server, not in your browser.</li>
+</ul>
+<p>No system is perfectly secure. If we discover a breach affecting your personal data, we
+will notify you and the relevant authority as required.</p>
+
+<h2>8. International transfers</h2>
+<p>Our providers may process data outside Egypt. Where they do, we rely on the provider's
+contractual data-protection commitments.</p>
+
+<h2>9. Children</h2>
+<p>The Service is not for anyone under 18, and we do not knowingly collect their data.</p>
+
+<h2>10. Changes</h2>
+<p>We will post any change here and, where it materially affects you, tell you by email.</p>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "gmg/app.html" %}
+{% block title %}Alerts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Alerts</h1>
+    <p class="page-sub">{{ alerts | length }} alerts · delivered by email when they fire</p>
+  </div>
+</div>
+
+<div class="callout">
+  Alerts are evaluated against real stored prices only. An alert never fires on demonstration
+  data, and where a price or indicator is unavailable the alert is skipped with the reason
+  shown rather than treated as a value of zero.
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Create an alert</h2></div>
+  <div class="card-body">
+    <form method="post" action="/alerts/create" class="form-row">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field"><label for="ticker">Ticker</label>
+        <input id="ticker" type="text" name="ticker" required placeholder="COMI"></div>
+      <div class="field"><label for="condition">Condition</label>
+        <select id="condition" name="condition" required>
+          {% for key, label in conditions.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select></div>
+      <div class="field"><label for="threshold">Threshold</label>
+        <input id="threshold" type="number" step="any" name="threshold" placeholder="e.g. 50">
+        <span class="hint">Percentages as decimals (0.05 = 5%)</span></div>
+      <div class="field"><label for="note">Note</label>
+        <input id="note" type="text" name="note" placeholder="optional"></div>
+      <div class="field"><label>&nbsp;</label>
+        <label class="check" style="margin-bottom:0">
+          <input type="checkbox" name="email_delivery" value="1" checked><span>Email me</span>
+        </label></div>
+      <div class="field"><label>&nbsp;</label>
+        <button class="btn btn-primary" type="submit">Create alert</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Your alerts</h2></div>
+  <div class="card-body flush">
+    {% if alerts %}
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr>
+          <th>Ticker</th><th>Condition</th><th class="num">Threshold</th>
+          <th class="num">Current</th><th>State</th><th class="hide-sm">Last fired</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for a in alerts %}
+        {% set ev = evaluations.get(a.id) %}
+        {% set q = quotes.get(a.ticker) %}
+        <tr>
+          <td><a class="tk" href="/stock/{{ a.ticker }}">{{ a.ticker }}</a></td>
+          <td>{{ conditions.get(a.condition, a.condition) }}
+            {% if a.note %}<div class="text-xs faint">{{ a.note }}</div>{% endif %}</td>
+          <td class="num">{{ a.threshold | fmt_num(2, '—') }}</td>
+          <td class="num">{{ q.price | fmt_price('') if q else 'N/A' }}</td>
+          <td>
+            {% if not a.active %}<span class="badge badge-muted">Paused</span>
+            {% elif ev and ev.triggered %}<span class="badge badge-up">Triggered</span>
+            {% elif ev and ev.skipped_reason %}<span class="badge badge-delayed">Cannot evaluate</span>
+            {% else %}<span class="badge badge-info">Watching</span>{% endif %}
+            {% if ev and ev.skipped_reason %}
+            <div class="text-xs faint">{{ ev.skipped_reason }}</div>
+            {% elif ev and ev.message %}
+            <div class="text-xs up">{{ ev.message }}</div>
+            {% endif %}
+          </td>
+          <td class="hide-sm text-xs faint">
+            {{ a.last_triggered_at | fmt_dt('%d %b %Y, %H:%M', 'never') }}
+            {% if a.trigger_count %}<br>{{ a.trigger_count }}×{% endif %}
+          </td>
+          <td>
+            <div class="row" style="gap:6px">
+              <form method="post" action="/alerts/{{ a.id }}/toggle">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="btn btn-sm btn-ghost" type="submit">{{ 'Resume' if not a.active else 'Pause' }}</button>
+              </form>
+              <form method="post" action="/alerts/{{ a.id }}/delete" data-confirm="Delete this alert?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><span class="ico">◈</span>No alerts yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

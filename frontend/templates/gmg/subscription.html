@@ -1,0 +1,144 @@
+{% extends "gmg/app.html" %}
+{% block title %}Subscription{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Subscription</h1>
+    <p class="page-sub">{{ plan.name }} · EGP {{ plan.price_egp | fmt_num(0) }} per {{ plan.interval }}</p>
+  </div>
+  <div>
+    {% if entitled %}<span class="badge badge-gold">Access active</span>
+    {% else %}<span class="badge badge-muted">No access</span>{% endif %}
+  </div>
+</div>
+
+<div class="grid g-2-1">
+  <div>
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Current status</h2></div>
+      <div class="card-body">
+        {% if subscription %}
+        <dl class="kv">
+          <dt>Status</dt><dd>{{ subscription.status }}</dd>
+          <dt>Access</dt><dd>{{ 'Active' if entitled else 'Not active' }}</dd>
+          <dt>Period started</dt><dd>{{ subscription.current_period_start | fmt_date }}</dd>
+          <dt>Period ends</dt><dd>{{ subscription.current_period_end | fmt_date }}</dd>
+          <dt>Days remaining</dt><dd>{{ subscription.days_remaining if subscription.days_remaining is not none else 'N/A' }}</dd>
+          {% if subscription.cancelled_at %}
+          <dt>Cancelled on</dt><dd>{{ subscription.cancelled_at | fmt_date }}</dd>
+          {% endif %}
+        </dl>
+
+        {% if subscription.status == 'CANCELLED' %}
+        <div class="callout warn mt-16">
+          Your subscription will not renew. You keep full access until
+          <strong>{{ subscription.current_period_end | fmt_date }}</strong> — the time you have
+          already paid for is not taken away.
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="dim">You do not have a subscription yet.</p>
+        {% endif %}
+
+        <div class="row wrap mt-16">
+          {% if not subscription %}
+          <form method="post" action="/account/subscription/trial">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn" type="submit">Start {{ plan.trial_days }}-day free trial</button>
+          </form>
+          {% endif %}
+
+          <form method="post" action="/account/subscription/checkout">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-primary" type="submit">
+              {{ 'Renew subscription' if subscription and subscription.status == 'ACTIVE' else 'Subscribe — EGP ' ~ plan.price_egp | fmt_num(0) }}
+            </button>
+          </form>
+
+          {% if subscription and subscription.status in ['ACTIVE', 'TRIAL'] %}
+          <form method="post" action="/account/subscription/cancel"
+                data-confirm="Cancel your subscription? You keep access until the end of the paid period.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-danger" type="submit">Cancel subscription</button>
+          </form>
+          {% elif subscription and subscription.status == 'CANCELLED' and entitled %}
+          <form method="post" action="/account/subscription/resume">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn" type="submit">Resume subscription</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Billing history</h2></div>
+      <div class="card-body flush">
+        {% if payments %}
+        <table class="tbl compact">
+          <thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th><th>Status</th><th>Period</th></tr></thead>
+          <tbody>
+          {% for p in payments %}
+          <tr>
+            <td class="nowrap">{{ p.created_at | fmt_date }}</td>
+            <td>{{ p.description or '—' }}</td>
+            <td class="num">EGP {{ p.amount_egp | fmt_num(2) }}</td>
+            <td>
+              <span class="badge {{ {'SUCCEEDED': 'badge-live', 'PENDING': 'badge-delayed', 'FAILED': 'badge-down', 'REFUNDED': 'badge-info'}.get(p.status, 'badge-muted') }}">
+                {{ p.status }}</span>
+            </td>
+            <td class="text-xs faint">
+              {% if p.period_start %}{{ p.period_start | fmt_date }} – {{ p.period_end | fmt_date }}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty">No payments recorded.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">What is included</h2></div>
+      <div class="card-body">
+        <ul class="plan-features">
+          {% for feature in plan.features %}<li>{{ feature }}</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">How payment works</h2></div>
+      <div class="card-body">
+        {% if payments_status.processes_payments %}
+        <p class="text-sm dim mb-0">
+          Payments are processed by <strong>{{ payments_status.display_name }}</strong>.
+          {{ brand.company }} never stores your card details.
+        </p>
+        {% else %}
+        <p class="text-sm dim">
+          <strong>No payment gateway is connected.</strong> Requesting a subscription records
+          your intent — <strong>no card is charged</strong> — and an administrator activates
+          access once payment has been confirmed by the agreed method.
+        </p>
+        <p class="text-xs faint mb-0">{{ payments_status.note }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Access is enforced server-side</h2></div>
+      <div class="card-body">
+        <p class="text-sm dim mb-0">
+          Paid pages are not rendered and paid API responses are not produced unless your
+          subscription is active. Editing the page in your browser cannot unlock them.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "gmg/app.html" %}
+{% block title %}Admin · Emails{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow"><h1 class="page-title">Email log</h1>
+    <p class="page-sub">Provider: {{ email.provider }} · {{ 'configured' if email.configured else 'not configured' }}</p></div>
+  <a class="btn btn-sm btn-ghost" href="/admin">Back to admin</a>
+</div>
+
+{% if not email.configured %}
+<div class="callout warn">{{ email.note }}</div>
+{% endif %}
+
+<div class="card"><div class="card-body flush">
+  <div class="tbl-scroll tall">
+    <table class="tbl compact">
+      <thead><tr><th>Sent</th><th>To</th><th>Template</th><th>Subject</th><th>Provider</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for e in emails %}
+      <tr>
+        <td class="faint nowrap text-xs">{{ e.created_at | fmt_dt }}</td>
+        <td class="text-xs">{{ e.to_email }}</td>
+        <td class="text-xs">{{ e.template }}</td>
+        <td class="text-xs faint">{{ e.subject[:70] }}</td>
+        <td class="text-xs">{{ e.provider }}</td>
+        <td><span class="badge {{ {'SENT': 'badge-live', 'FAILED': 'badge-down', 'SKIPPED': 'badge-muted'}.get(e.status, 'badge-muted') }}">{{ e.status }}</span>
+          {% if e.error %}<div class="text-xs down">{{ e.error[:70] }}</div>{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}

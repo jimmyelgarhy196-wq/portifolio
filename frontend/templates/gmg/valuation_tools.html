@@ -1,0 +1,67 @@
+{% extends "gmg/app.html" %}
+{% block title %}Valuation tools{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">Valuation tools</h1>
+    <p class="page-sub">Discounted cash flow and multiples, with assumptions you control</p>
+  </div>
+</div>
+
+<div class="callout gold">
+  <strong>A calculator, not a price target.</strong> Every output is the arithmetic result of
+  the assumptions you enter. Change an assumption and the answer changes. {{ brand.company }}
+  does not issue price targets and this is not investment advice.
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Open a company's valuation model</h2></div>
+  <div class="card-body">
+    <form method="get" action="/valuation" class="form-row">
+      <div class="field" style="min-width:280px">
+        <label for="ticker">Company</label>
+        <select id="ticker" name="ticker">
+          <option value="">Choose a company…</option>
+          {% for c in companies %}
+          <option value="{{ c.ticker }}" {{ 'selected' if ticker == c.ticker }}>
+            {{ c.ticker }} — {{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>&nbsp;</label>
+        <button class="btn btn-primary" type="submit">Select</button></div>
+    </form>
+
+    {% if ticker %}
+    <a class="btn btn-blue mt-16" href="/stock/{{ ticker }}?tab=valuation">
+      Open the full valuation model for {{ ticker }} →</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">How the DCF works</h2></div>
+    <div class="card-body">
+      <p class="text-sm dim">A two-stage model. Free cash flow grows from your starting rate,
+      fading linearly to the terminal rate across the forecast years. Each year is discounted
+      at the discount rate, and a Gordon terminal value is added and discounted back. Net debt
+      is subtracted to reach equity value, which is divided by the share count.</p>
+      <p class="text-sm dim mb-0">The model refuses to produce a number when free cash flow is
+      missing or negative, when the share count is unknown, or when terminal growth is not
+      below the discount rate — cases where the arithmetic would be meaningless.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Egyptian market inputs</h2></div>
+    <div class="card-body">
+      <p class="text-sm dim">The default discount rate uses CAPM with an EGP risk-free rate,
+      an equity risk premium and a beta — all editable. EGP rates have been high, which pushes
+      discount rates well above what a dollar-based model would use and materially lowers
+      present values.</p>
+      <p class="text-sm dim mb-0">Because a DCF is so sensitive to these two inputs, every
+      model is published with a sensitivity grid across both.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% set a = analysis %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">{{ ticker }} <span class="accent">price chart</span></h2>
+    <span class="card-meta">Candlesticks, volume and indicators · drawn from stored daily bars</span>
+  </div>
+  <div class="card-body flush">
+    {% include 'gmg/_chart.html' %}
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Trend <span class="accent">context</span></h2></div>
+    <div class="card-body">
+      {% if a.technical %}
+      <dl class="kv">
+        <dt>Trend</dt><dd>{{ a.technical.trend or 'N/A' }}</dd>
+        <dt>SMA 50</dt><dd>{{ a.technical.sma50 | fmt_num(2, 'N/A') }}</dd>
+        <dt>SMA 200</dt><dd>{{ a.technical.sma200 | fmt_num(2, 'N/A') }}</dd>
+        <dt>RSI (14)</dt><dd>{{ a.technical.rsi14 | fmt_num(1, 'N/A') }}</dd>
+        <dt>ATR (14)</dt><dd>{{ a.technical.atr14 | fmt_num(2, 'N/A') }}</dd>
+        <dt>20-day volatility</dt><dd>{{ a.technical.volatility_20d | fmt_pct(1, 'N/A') }}</dd>
+      </dl>
+      {% else %}
+      <p class="na mb-0">N/A — data unavailable. Not enough price history to compute indicators.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">How this chart is <span class="accent">built</span></h2></div>
+    <div class="card-body">
+      <p class="text-sm dim">
+        The chart is rendered in your browser from daily bars stored by GMG. Indicators
+        (SMA, Bollinger, RSI, MACD) are computed from those same closes using the standard
+        formulas — nothing is fetched from a third party while you browse, and no chart
+        vendor receives your activity.
+      </p>
+      <p class="text-sm dim mb-0">
+        Where a bar is missing, the line breaks rather than interpolating a value that was
+        never observed.
+      </p>
+    </div>
+  </div>
+</div>

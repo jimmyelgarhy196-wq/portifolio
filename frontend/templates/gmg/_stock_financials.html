@@ -1,0 +1,45 @@
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Reported <span class="accent">financials</span></h2>
+    <span class="card-meta">as filed, never estimated</span>
+  </div>
+  <div class="card-body flush">
+    {% if periods %}
+    <div class="tbl-scroll">
+      <table class="tbl compact">
+        <thead>
+          <tr>
+            <th>Line item</th>
+            {% for p in periods %}<th class="num">{{ p.period_label }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+        {% for label, field in statement_lines %}
+        <tr>
+          <td>{{ label }}</td>
+          {% for p in periods %}
+            {% set v = p.values.get(field) %}
+            <td class="num {{ '' if v is not none else 'na' }}">
+              {{ v | fmt_compact if v is not none else 'N/A' }}
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      N/A — data unavailable. No financial statements are stored for {{ ticker }}.
+      GMG shows reported figures only; it does not model or estimate a company's accounts.
+    </div>
+    {% endif %}
+  </div>
+  {% if periods %}
+  <div class="card-foot">
+    Figures are as reported in the source filings, in the currency and units recorded with
+    each statement. Always confirm against the company's own published financial statements
+    and its EGX disclosures before relying on any figure.
+  </div>
+  {% endif %}
+</div>

@@ -1,0 +1,30 @@
+{% extends "gmg/app.html" %}
+{% block title %}Subscription requested{% endblock %}
+{% block content %}
+<div class="page-head"><div class="grow">
+  <h1 class="page-title">Subscription requested</h1>
+</div></div>
+
+<div class="card" style="max-width:680px">
+  <div class="card-body">
+    <div class="flash info"><span>{{ message }}</span></div>
+
+    {% if payment %}
+    <dl class="kv mt-16">
+      <dt>Reference</dt><dd>#{{ payment.id }}</dd>
+      <dt>Amount</dt><dd>EGP {{ payment.amount_egp | fmt_num(2) }}</dd>
+      <dt>Status</dt><dd>{{ payment.status }}</dd>
+      <dt>Requested</dt><dd>{{ payment.created_at | fmt_dt }}</dd>
+    </dl>
+    {% endif %}
+
+    <div class="callout gold mt-16">
+      <strong>No card has been charged.</strong> {{ brand.company }} does not operate a
+      simulated checkout and will not take card details until a licensed Egyptian payment
+      provider is connected to this deployment.
+    </div>
+
+    <a class="btn btn-primary mt-16" href="/account/subscription">Back to subscription</a>
+  </div>
+</div>
+{% endblock %}

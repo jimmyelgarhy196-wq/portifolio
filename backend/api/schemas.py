@@ -95,3 +95,82 @@ TEMPLATE_FILTERS = {
     "score_class": score_class,
     "direction_class": direction_class,
 }
+
+
+# ---------------------------------------------------------------------------
+# GMG presentation filters
+# ---------------------------------------------------------------------------
+#: Shown wherever a figure genuinely is not available. Never a zero, never a
+#: dash that could be mistaken for a real value of nothing.
+NA_TEXT = "N/A — data unavailable"
+
+
+def fmt_price(value: Any, currency: str = "EGP", dash: str = NA_TEXT) -> str:
+    """EGX prices carry two decimals; sub-EGP 1 tickers carry three."""
+    if value is None:
+        return dash
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return dash
+    digits = 3 if abs(number) < 1 else 2
+    return f"{currency} {number:,.{digits}f}" if currency else f"{number:,.{digits}f}"
+
+
+def fmt_compact(value: Any, dash: str = "—", digits: int = 2) -> str:
+    """1_234_567 -> 1.23M. Used for volume and traded value."""
+    if value is None:
+        return dash
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return dash
+    sign = "-" if number < 0 else ""
+    number = abs(number)
+    for cutoff, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
+        if number >= cutoff:
+            return f"{sign}{number / cutoff:,.{digits}f}{suffix}"
+    return f"{sign}{number:,.0f}"
+
+
+def fmt_dt(value: Any, fmt: str = "%d %b %Y, %H:%M", dash: str = "—") -> str:
+    if value is None:
+        return dash
+    try:
+        return value.strftime(fmt)
+    except AttributeError:
+        return str(value)
+
+
+def fmt_date(value: Any, fmt: str = "%d %b %Y", dash: str = "—") -> str:
+    return fmt_dt(value, fmt, dash)
+
+
+def badge_class(badge: str | None) -> str:
+    """Maps a freshness badge onto its CSS class."""
+    return {
+        "LIVE": "badge-live", "DELAYED": "badge-delayed", "END OF DAY": "badge-eod",
+        "DEMO DATA": "badge-demo", "NO DATA": "badge-none",
+    }.get((badge or "").upper(), "badge-muted")
+
+
+def rating_class(rating: str | None) -> str:
+    if not rating:
+        return "rating-na"
+    return "rating-" + rating.strip().lower().replace(" ", "_").replace("-", "_")
+
+
+def sign_class(value: Any) -> str:
+    """Alias of direction_class, named for how templates read."""
+    return direction_class(value)
+
+
+TEMPLATE_FILTERS.update({
+    "fmt_price": fmt_price,
+    "fmt_compact": fmt_compact,
+    "fmt_dt": fmt_dt,
+    "fmt_date": fmt_date,
+    "badge_class": badge_class,
+    "rating_class": rating_class,
+    "sign_class": sign_class,
+})

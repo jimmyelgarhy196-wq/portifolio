@@ -1,0 +1,207 @@
+{% extends "gmg/app.html" %}
+{% block title %}EGX Market Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">EGX Market Dashboard</h1>
+    <p class="page-sub">
+      {{ market.status.label }} · {{ market.local_time.strftime('%A, %d %B %Y · %H:%M') }} EET
+      {% if overview.as_of %}· quotes as of {{ overview.as_of | fmt_dt }}{% endif %}
+    </p>
+  </div>
+  <div class="row wrap">
+    <span class="badge {{ overview.quote_badge | badge_class }}">{{ overview.quote_badge }}</span>
+    <span class="badge badge-muted">{{ overview.covered }}/{{ overview.universe_size }} covered</span>
+  </div>
+</div>
+
+{% if overview.universe_size == 0 %}
+<div class="card"><div class="empty">
+  <span class="ico">◫</span>
+  No EGX companies are loaded yet. Run <code>python scripts/refresh_universe.py</code> to
+  populate the universe, then <code>python scripts/ingest.py</code> to load prices.
+</div></div>
+{% else %}
+
+<!-- Indices ------------------------------------------------------------- -->
+<div class="grid g3 mb-16">
+  {% for ix in overview.indices %}
+  <div class="index-card {{ '' if ix.has_data else 'na' }}">
+    <div class="ix-top">
+      <span class="ix-name">{{ ix.name }}</span>
+      {% if ix.is_official %}
+        <span class="ix-tag" style="color:var(--up);border-color:rgba(33,199,122,.4)">Official</span>
+      {% else %}
+        <span class="ix-tag">Composite</span>
+      {% endif %}
+      {% if ix.is_demo %}<span class="ix-tag" style="color:#dfb2ff;border-color:rgba(199,125,255,.45)">Demo</span>{% endif %}
+    </div>
+
+    {% if ix.is_official and ix.level is not none %}
+      <div class="ix-value">{{ ix.level | fmt_num(2) }}</div>
+      <div class="ix-change {{ ix.change_pct | direction_class }}">
+        {{ ix.change | fmt_num(2) }} ({{ ix.change_pct | fmt_pct(2, 'N/A', true) }})
+      </div>
+    {% elif ix.change_pct is not none %}
+      <div class="ix-value {{ ix.change_pct | direction_class }}">{{ ix.change_pct | fmt_pct(2, 'N/A', true) }}</div>
+      <div class="ix-change dim">Constituent composite move</div>
+    {% else %}
+      <div class="ix-value">N/A</div>
+      <div class="ix-change dim">data unavailable</div>
+    {% endif %}
+
+    <div class="ix-meta">
+      {{ ix.basis }}.
+      {% if ix.covered %}
+        <br>{{ ix.advancers }} up · {{ ix.decliners }} down · {{ ix.unchanged }} flat
+        {% if ix.volume %}· Vol {{ ix.volume | fmt_compact }}{% endif %}
+      {% endif %}
+      {% if not ix.is_official %}
+        <br><span class="faint">Not the official EGX index level.</span>
+      {% endif %}
+    </div>
+
+    <div class="ix-spark">
+      {% if ix.series %}
+        <canvas data-spark="{{ ix.series | tojson }}"></canvas>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Breadth ------------------------------------------------------------- -->
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Market <span class="accent">overview</span></h2>
+    <span class="card-meta">
+      {{ overview.breadth.covered }} of {{ overview.breadth.universe }} companies quoted
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="tiles g6">
+      <div class="tile">
+        <div class="k">Advancers</div>
+        <div class="v up">{{ overview.breadth.advancers }}</div>
+        <div class="s">{{ overview.breadth.advancer_pct | fmt_pct(0, '—') }} of quoted</div>
+      </div>
+      <div class="tile">
+        <div class="k">Decliners</div>
+        <div class="v down">{{ overview.breadth.decliners }}</div>
+        <div class="s">A/D {{ overview.breadth.advance_decline_ratio | fmt_num(2, 'N/A') }}</div>
+      </div>
+      <div class="tile">
+        <div class="k">Unchanged</div>
+        <div class="v dim">{{ overview.breadth.unchanged }}</div>
+        <div class="s">no move on the day</div>
+      </div>
+      <div class="tile">
+        <div class="k">Total volume</div>
+        <div class="v sm">{{ overview.breadth.total_volume | fmt_compact }}</div>
+        <div class="s">shares traded</div>
+      </div>
+      <div class="tile">
+        <div class="k">Market value</div>
+        <div class="v sm">{{ overview.breadth.total_turnover | fmt_compact }}</div>
+        <div class="s">EGP turnover</div>
+      </div>
+      <div class="tile">
+        <div class="k">Session</div>
+        <div class="v sm">{{ market.status.label }}</div>
+        <div class="s">{{ market.opens_at.strftime('%H:%M') }}–{{ market.closes_at.strftime('%H:%M') }} EET</div>
+      </div>
+    </div>
+    {% if overview.breadth.covered < overview.breadth.universe %}
+    <p class="text-xs faint mt-16 mb-0">
+      Breadth is computed over the {{ overview.breadth.covered }} companies for which a quote
+      was available, not the full {{ overview.breadth.universe }}-company universe.
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Movers -------------------------------------------------------------- -->
+<div class="grid g2">
+  {{ movers_card('Top gainers', overview.gainers, 'up') }}
+  {{ movers_card('Top losers', overview.losers, 'down') }}
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Most <span class="accent">active</span></h2>
+    <span class="card-meta">by traded value</span>
+  </div>
+  <div class="card-body flush">
+    {% if overview.most_active %}
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr>
+          <th>Ticker</th><th class="hide-sm">Company</th><th class="hide-sm">Sector</th>
+          <th class="num">Price</th><th class="num">Change</th>
+          <th class="num">Volume</th><th class="num">Value (EGP)</th>
+        </tr></thead>
+        <tbody>
+        {% for m in overview.most_active %}
+          <tr>
+            <td><a class="tk" href="/stock/{{ m.ticker }}">{{ m.ticker }}</a></td>
+            <td class="nm hide-sm">{{ m.name }}</td>
+            <td class="nm hide-sm">{{ m.sector or '—' }}</td>
+            <td class="num">{{ m.price | fmt_price('') }}</td>
+            <td class="num"><span class="chg {{ m.change_pct | direction_class }}">{{ m.change_pct | fmt_pct(2, 'N/A', true) }}</span></td>
+            <td class="num">{{ m.volume | fmt_compact }}</td>
+            <td class="num">{{ m.turnover | fmt_compact }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">N/A — data unavailable. No traded-value data for this session.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="callout gold">
+  <strong>Where these numbers come from.</strong> {{ overview.data_note }}
+  Index figures marked “Composite” are computed by GMG from the quotes of index members and
+  are <strong>not</strong> the official values published by the Egyptian Exchange.
+  <a href="/data-sources">See every data source</a>.
+</div>
+{% endblock %}
+
+{% macro movers_card(title, rows, tone) %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">{{ title }}</h2>
+    <span class="card-meta">{{ rows | length }} shown</span>
+  </div>
+  <div class="card-body flush">
+    {% if rows %}
+    <div class="tbl-scroll">
+      <table class="tbl compact">
+        <thead><tr>
+          <th>Ticker</th><th class="hide-sm">Company</th>
+          <th class="num">Price</th><th class="num">Change</th><th class="num hide-sm">Volume</th>
+        </tr></thead>
+        <tbody>
+        {% for m in rows %}
+          <tr>
+            <td><a class="tk" href="/stock/{{ m.ticker }}">{{ m.ticker }}</a></td>
+            <td class="nm hide-sm">{{ m.name }}</td>
+            <td class="num">{{ m.price | fmt_price('') }}</td>
+            <td class="num"><span class="chg {{ tone }}">{{ m.change_pct | fmt_pct(2, 'N/A', true) }}</span></td>
+            <td class="num hide-sm">{{ m.volume | fmt_compact }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">N/A — no {{ title | lower }} to report for this session.</div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+

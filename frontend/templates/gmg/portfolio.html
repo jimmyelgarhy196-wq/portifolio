@@ -1,0 +1,113 @@
+{% extends "gmg/app.html" %}
+{% block title %}Portfolio{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">{{ book.name }}</h1>
+    <p class="page-sub">Tracking only — {{ brand.company }} holds no money and no securities</p>
+  </div>
+</div>
+
+<div class="callout gold">
+  <strong>This is a tracker, not a brokerage account.</strong> It records the holdings you
+  enter so they can be valued and analysed. {{ brand.company }} does not hold your shares,
+  cannot place orders, and is not connected to any broker.
+</div>
+
+<div class="tiles g4 mb-16">
+  <div class="tile"><div class="k">Positions</div>
+    <div class="v">{{ summary.positions }}</div></div>
+  <div class="tile"><div class="k">Cost basis</div>
+    <div class="v sm">{{ summary.total_cost | fmt_price('EGP') if summary.total_cost is not none else 'N/A' }}</div></div>
+  <div class="tile"><div class="k">Market value</div>
+    <div class="v sm">{{ summary.total_value | fmt_price('EGP') if summary.total_value is not none else 'N/A' }}</div>
+    {% if summary.partial %}<div class="s down">{{ summary.unvalued }} position(s) unpriced</div>{% endif %}</div>
+  <div class="tile"><div class="k">Unrealised P/L</div>
+    {% if summary.pnl is not none %}
+    <div class="v sm {{ summary.pnl | direction_class }}">{{ summary.pnl | fmt_num(2) }}</div>
+    <div class="s {{ summary.pnl_pct | direction_class }}">{{ summary.pnl_pct | fmt_pct(2, 'N/A', true) }}</div>
+    {% else %}
+    <div class="v sm na">N/A</div>
+    <div class="s">not every position could be priced</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if summary.partial and summary.positions %}
+<div class="flash warn">
+  <span>{{ summary.unvalued }} of {{ summary.positions }} positions have no available price,
+  so the total value and P/L above cover only the priced holdings and are not a complete
+  portfolio total.</span>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Holdings</h2></div>
+  <div class="card-body flush">
+    {% if rows %}
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr>
+          <th>Ticker</th><th class="num">Shares</th><th class="num">Cost / share</th>
+          <th class="num">Price</th><th class="num">Cost</th><th class="num">Value</th>
+          <th class="num">P/L</th><th class="num hide-sm">Weight</th>
+          <th class="hide-sm">Data</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for row in rows %}
+        {% set p = row.position %}
+        <tr>
+          <td><a class="tk" href="/stock/{{ p.ticker }}">{{ p.ticker }}</a>
+            {% if p.purchase_date %}<div class="text-xs faint">since {{ p.purchase_date | fmt_date }}</div>{% endif %}</td>
+          <td class="num">{{ p.shares | fmt_num(0) }}</td>
+          <td class="num">{{ p.purchase_price | fmt_num(2) }}</td>
+          <td class="num">{{ row.quote.price | fmt_price('') if row.quote else 'N/A' }}</td>
+          <td class="num">{{ row.cost | fmt_num(2) }}</td>
+          <td class="num">{{ row.value | fmt_num(2) if row.value is not none else 'N/A' }}</td>
+          <td class="num">
+            {% if row.pnl is not none %}
+            <span class="{{ row.pnl | direction_class }}">{{ row.pnl | fmt_num(2) }}</span>
+            <div class="text-xs {{ row.pnl_pct | direction_class }}">{{ row.pnl_pct | fmt_pct(1, '', true) }}</div>
+            {% else %}<span class="na">N/A</span>{% endif %}
+          </td>
+          <td class="num hide-sm">{{ row.weight | fmt_pct(1, '—') }}</td>
+          <td class="hide-sm"><span class="badge {{ row.freshness.badge | badge_class }}">{{ row.freshness.badge }}</span></td>
+          <td>
+            <form method="post" action="/portfolio/positions/{{ p.id }}/delete"
+                  data-confirm="Remove {{ p.ticker }} from your portfolio?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><span class="ico">▦</span>No holdings recorded yet. Add one below.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Add a holding</h2></div>
+  <div class="card-body">
+    <form method="post" action="/portfolio/positions/add" class="form-row">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field"><label for="ticker">Ticker</label>
+        <input id="ticker" type="text" name="ticker" required placeholder="COMI"></div>
+      <div class="field"><label for="shares">Shares</label>
+        <input id="shares" type="number" step="any" min="0.0001" name="shares" required></div>
+      <div class="field"><label for="purchase_price">Price paid per share</label>
+        <input id="purchase_price" type="number" step="any" min="0.0001" name="purchase_price" required></div>
+      <div class="field"><label for="purchase_date">Purchase date</label>
+        <input id="purchase_date" type="date" name="purchase_date"></div>
+      <div class="field"><label for="note">Note</label>
+        <input id="note" type="text" name="note" placeholder="optional"></div>
+      <div class="field"><label>&nbsp;</label>
+        <button class="btn btn-primary" type="submit">Add holding</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

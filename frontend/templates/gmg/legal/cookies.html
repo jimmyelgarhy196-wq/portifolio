@@ -1,0 +1,47 @@
+{% extends "gmg/legal/_base.html" %}
+{% block document %}
+<h2>1. The short version</h2>
+<p>{{ brand.product }} uses <strong>one</strong> cookie, and only when you are signed in.
+We use no advertising cookies, no third-party analytics, and no cross-site tracking of any
+kind. There is no consent banner because there is nothing to consent to beyond the cookie
+that keeps you signed in.</p>
+
+<h2>2. The cookie we set</h2>
+<table class="tbl compact" style="margin:14px 0">
+  <thead><tr><th>Name</th><th>Purpose</th><th>Life</th><th>Type</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="mono">{{ settings.session_cookie }}</td>
+      <td>Keeps you signed in. Contains a signed session identifier — no personal data,
+          and the matching secret is stored only as a hash on our server.</td>
+      <td>Up to {{ settings.session_days }} days, or until you sign out</td>
+      <td>Strictly necessary</td>
+    </tr>
+  </tbody>
+</table>
+<p>It is set <span class="mono">HttpOnly</span> so scripts cannot read it, and
+<span class="mono">SameSite=Lax</span> so it is not sent from other sites. In production it is
+also set <span class="mono">Secure</span>, so it travels only over HTTPS.</p>
+
+<h2>3. Browser storage</h2>
+<p>The application may use your browser's <span class="mono">sessionStorage</span> to remember
+which tab you last opened on a page. That stays on your device, is never sent to us, and
+disappears when you close the tab.</p>
+
+<h2>4. What we do not use</h2>
+<ul>
+  <li>No Google Analytics or comparable analytics service;</li>
+  <li>No advertising, retargeting or social-media pixels;</li>
+  <li>No fingerprinting;</li>
+  <li>No third-party fonts, scripts or charting services that would see your activity —
+      charts are drawn locally in your browser.</li>
+</ul>
+
+<h2>5. Controlling cookies</h2>
+<p>You can block or delete cookies in your browser settings. Blocking our session cookie means
+you cannot stay signed in, so the application will not work.</p>
+
+<h2>6. Changes</h2>
+<p>If we ever add a cookie, we will update this page before doing so and, where the law
+requires consent, ask for it first.</p>
+{% endblock %}

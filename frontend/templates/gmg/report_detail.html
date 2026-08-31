@@ -1,0 +1,27 @@
+{% extends "gmg/app.html" %}
+{% block title %}{{ report.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="grow">
+    <h1 class="page-title">{{ report.title }}</h1>
+    <p class="page-sub">
+      Published {{ report.created_at | fmt_dt }}
+      {% if report.period_start %}· covering {{ report.period_start | fmt_date }} – {{ report.period_end | fmt_date }}{% endif %}
+    </p>
+  </div>
+  <a class="btn btn-ghost" href="/reports">All reports</a>
+</div>
+
+{% if report.contains_synthetic %}
+<div class="flash warn">
+  <span><strong>This report includes demonstration data.</strong> Figures drawn from generated
+  prices are not real market data and must not be used for any decision.</span>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <pre style="white-space:pre-wrap;font-family:var(--sans);font-size:13.5px;line-height:1.75;color:var(--text-dim);margin:0">{{ report.markdown }}</pre>
+  </div>
+</div>
+{% endblock %}

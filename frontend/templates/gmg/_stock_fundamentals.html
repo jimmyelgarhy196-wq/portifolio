@@ -1,0 +1,89 @@
+{% set a = analysis %}
+{% set f = a.fundamental %}
+{% if not f or not f.score %}
+<div class="card"><div class="empty">
+  N/A — data unavailable. {{ brand.short }} holds no usable financial statements for
+  {{ ticker }}, so no fundamental score can be produced. GMG does not estimate a company's
+  accounts in order to fill the gap.
+</div></div>
+{% else %}
+<div class="grid g-1-2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Fundamental <span class="accent">score</span></h2></div>
+    <div class="card-body center">
+      <div class="score-ring" style="margin:0 auto">
+        <canvas data-score="{{ f.score.value if f.score.value is not none else '' }}"></canvas>
+        <div class="inner">
+          <div class="n">{{ f.score.value | fmt_num(0, 'N/A') }}</div>
+          <div class="l">Fundamental</div>
+        </div>
+      </div>
+      <p class="text-xs dim mt-16 mb-0">
+        Confidence {{ f.score.confidence.value }} · coverage {{ f.score.coverage | fmt_pct(0) }}
+        {% if f.score.note %}<br>{{ f.score.note }}{% endif %}
+      </p>
+    </div>
+    <div class="card-foot">
+      Latest period: {{ f.latest_period or 'unknown' }}
+      {% if f.period_end %}· ends {{ f.period_end | fmt_date }}{% endif %}
+      {% if f.available_from %}<br>Published {{ f.available_from | fmt_date }} — the date from
+      which GMG allows this data to influence any historical calculation.{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Score <span class="accent">breakdown</span></h2>
+      <span class="card-meta">weights redistribute across available components</span></div>
+    <div class="card-body">
+      {% for comp in f.score.components %}
+      <div class="subscore {{ '' if comp.available else 'missing' }}">
+        <div class="row">
+          <span class="lbl">{{ comp.name | replace('_', ' ') | title }}</span>
+          <span class="val">{{ comp.value | fmt_num(0, 'N/A — no data') }}</span>
+          <span class="wt">{{ comp.weight | fmt_num(0) }}%</span>
+        </div>
+        <div class="track"><i class="fill" style="width:{{ comp.value if comp.available else 0 }}%"></i></div>
+        <div class="text-xs faint mt-8">{{ comp.explanation }}</div>
+        {% if comp.inputs %}
+        <div class="source-line">
+          {% for key, value in comp.inputs.items() %}
+          <span>{{ key | replace('_', ' ') }}: <strong>{{ value }}</strong></span>
+          {% if not loop.last %}<span class="sep">·</span>{% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Computed <span class="accent">metrics</span></h2>
+    <span class="card-meta">every figure derived from stored statements</span></div>
+  <div class="card-body flush">
+    <div class="tbl-scroll tall">
+      <table class="tbl compact">
+        <thead><tr><th>Metric</th><th class="num">Value</th><th>Derived from</th><th>Period</th></tr></thead>
+        <tbody>
+        {% for name, m in f.metrics.items() | sort %}
+        <tr>
+          <td>{{ name | replace('_', ' ') | title }}</td>
+          <td class="num {{ '' if m.available else 'na' }}">
+            {{ m.formatted() if m.available else 'N/A' }}
+          </td>
+          <td class="text-xs faint">
+            {% if m.inputs %}
+              {% for key, value in m.inputs.items() %}{{ key }}={{ value }}{% if not loop.last %}, {% endif %}{% endfor %}
+            {% else %}—{% endif %}
+            {% if m.note %}<br><span class="down">{{ m.note }}</span>{% endif %}
+          </td>
+          <td class="text-xs faint">{{ m.period or '—' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}

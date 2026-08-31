@@ -1,0 +1,57 @@
+{% extends "gmg/legal/_base.html" %}
+{% block document %}
+<h2>1. The plan</h2>
+<p>{{ brand.product }} is offered as a single subscription plan:</p>
+<ul>
+  <li><strong>{{ plan.name }}</strong> — EGP {{ plan.price_egp | fmt_num(0) }} per {{ plan.interval }};</li>
+  <li>A {{ plan.trial_days }}-day free trial, which does not require payment details;</li>
+  <li>Full access to every feature listed on the <a href="/pricing">pricing page</a>.</li>
+</ul>
+
+<h2>2. Free trial</h2>
+<p>Your trial begins when you create your account and runs for {{ plan.trial_days }} days.
+It gives you the same access as a paid subscription. When it ends, paid features stop being
+available until you subscribe. We do not charge you automatically at the end of a trial:
+starting a subscription is always an action you take.</p>
+
+<h2>3. Billing</h2>
+<p>Subscriptions are billed for one {{ plan.interval }} at a time, in Egyptian pounds.
+The period runs from the date payment is confirmed. If you renew before your period ends,
+the new period is added to the end of the existing one, so no paid time is lost.</p>
+<p>Where no payment gateway is connected to this deployment, requesting a subscription
+records your intent only — <strong>no card is charged</strong> — and an administrator
+activates your access once payment has been confirmed by the agreed method.
+{{ brand.company }} does not operate a simulated checkout.</p>
+
+<h2>4. Cancelling</h2>
+<ul>
+  <li>Cancel at any time from your account page. No notice period and no cancellation fee.</li>
+  <li>Your access continues to the end of the period you have already paid for.</li>
+  <li>The subscription then simply does not renew.</li>
+  <li>You can resume before the period ends and keep the same billing date.</li>
+</ul>
+
+<h2>5. What happens when access ends</h2>
+<p>Your account, watchlists, portfolio entries, saved screens and alerts are retained.
+Paid features become unavailable, and access is re-enabled the moment you subscribe again.
+You can request deletion of your data at any time.</p>
+
+<h2>6. Price changes</h2>
+<p>We may change the price. Any change is notified by email at least 30 days before it takes
+effect and applies from your next renewal, never mid-period. If you do not accept a new price,
+cancel before it takes effect.</p>
+
+<h2>7. Fair use</h2>
+<p>A subscription is for one person. Sharing credentials, reselling access, or bulk-extracting
+data is a breach of the <a href="/terms">Terms of Service</a> and may result in suspension.</p>
+
+<h2>8. Suspension for non-payment</h2>
+<p>If a renewal payment fails we will tell you and mark the subscription past due. Access
+continues for any period already paid. If payment is not resolved, the subscription expires
+at the end of that period.</p>
+
+<h2>9. What the subscription does not include</h2>
+<p>It does not include investment advice, portfolio management, trade execution, custody of
+money or securities, or any guaranteed outcome. See the
+<a href="/disclaimer">Investment Disclaimer</a>.</p>
+{% endblock %}

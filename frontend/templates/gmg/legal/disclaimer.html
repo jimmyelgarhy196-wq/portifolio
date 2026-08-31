@@ -1,0 +1,59 @@
+{% extends "gmg/legal/_base.html" %}
+{% block document %}
+<div class="callout risk">
+  <strong>Nothing on {{ brand.product }} is investment advice.</strong> It is information and
+  research. You are responsible for your own investment decisions.
+</div>
+
+<h2>1. No investment advice</h2>
+<p>{{ brand.company }} provides market information, analytics and research commentary about
+securities listed on the Egyptian Exchange. None of it is a personal recommendation to you.
+We do not know your objectives, your financial circumstances, your tax position or your
+tolerance for loss, and nothing we publish is tailored to them.</p>
+<p>A score, a rating, a “fair value”, a signal, a screen result or a written thesis is
+<strong>analysis, not advice</strong>. Two investors reading the same page should reasonably
+reach different decisions.</p>
+
+<h2>2. No guarantee of any result</h2>
+<p>We do not guarantee, promise or forecast any profit, return, income or performance.
+We do not describe anything as risk-free or as a guaranteed return, because no investment in
+listed securities is either. Past performance — of a security, of a strategy, or of our own
+scores — does not indicate future results.</p>
+
+<h2>3. We do not handle your money or your securities</h2>
+<p>{{ brand.company }} does not accept or hold client funds, does not hold securities, does
+not execute or route orders, and does not manage portfolios for clients. The portfolio tool
+records holdings <em>you</em> enter so that they can be valued and analysed; it does not hold
+anything and is not connected to any broker.</p>
+
+<h2>4. Regulatory status</h2>
+<p>{{ brand.company }} is not licensed or registered as a financial adviser, portfolio
+manager, securities brokerage, or investment fund by the Egyptian Financial Regulatory
+Authority (FRA), the Central Bank of Egypt, or any other regulator, and does not claim to be.
+We provide information and research only.</p>
+
+<h2>5. Data limitations</h2>
+<p>We label every price with its source, its age and any delay, and we display
+“N/A — data unavailable” rather than estimating a figure we do not have. Data may still be
+delayed, incomplete or incorrect. Analytics computed from it inherit those limitations.
+Where the platform shows demonstration data, it is labelled
+<strong>“DEMO DATA — NOT REAL-TIME”</strong> and must not be used for any decision.</p>
+
+<h2>6. AI-generated content</h2>
+<p>Some written commentary is produced with the assistance of artificial intelligence. It is
+constrained to the data available and is labelled where used, but it can still be wrong or
+incomplete. Treat AI commentary as a starting point for your own research, never as a
+conclusion. Numerical claims should always be checked against the source documents.</p>
+
+<h2>7. Your responsibility</h2>
+<ul>
+  <li>Verify every figure against the company's own published statements and the EGX's
+      official disclosures before acting.</li>
+  <li>Consider taking independent professional advice appropriate to your circumstances.</li>
+  <li>Never invest money you cannot afford to lose.</li>
+</ul>
+
+<h2>8. Risk</h2>
+<p>Investing in listed securities carries risk, including the loss of the entire amount
+invested. See the full <a href="/risk-disclosure">Risk Disclosure</a>.</p>
+{% endblock %}

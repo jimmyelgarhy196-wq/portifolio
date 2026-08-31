@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ brand.product }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ brand.tagline }}. EGX market data, fundamental and technical analysis, and AI-assisted equity research from {{ brand.company }}.{% endblock %}">
+  <link rel="stylesheet" href="/static/css/terminal.css">
+  <link rel="stylesheet" href="/static/css/gmg.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23d4af37'/><text x='32' y='43' font-size='26' font-weight='bold' text-anchor='middle' font-family='sans-serif' fill='%2310131a'>G</text></svg>">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<nav class="public-nav">
+  {% from 'gmg/_brand.html' import logo %}{{ logo() }}
+  <div class="links">
+    <a href="/#platform" class="hide-sm">Platform</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/data-sources" class="hide-sm">Data</a>
+    <a href="/contact" class="hide-sm">Contact</a>
+    {% if viewer and viewer.is_authenticated %}
+      <a class="btn btn-sm btn-primary" href="/market">Open platform</a>
+    {% else %}
+      <a href="/login">Sign in</a>
+      <a class="btn btn-sm btn-primary" href="/signup">Start free trial</a>
+    {% endif %}
+  </div>
+</nav>
+
+{% block body %}{% endblock %}
+
+<footer class="site-foot">
+  <div class="cols">
+    <div>
+      {{ logo() }}
+      <p class="text-sm dim mt-16" style="max-width:340px">
+        {{ brand.tagline }}. Institutional-style research tools for the Egyptian Exchange,
+        built by {{ brand.company }}.
+      </p>
+    </div>
+    <div>
+      <h4>Platform</h4>
+      <a href="/market">Market dashboard</a>
+      <a href="/stocks">EGX stocks</a>
+      <a href="/screener">Screener</a>
+      <a href="/pricing">Pricing</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="/contact">Contact</a>
+      <a href="/data-sources">Data sources</a>
+      <a href="/about">About GMG</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="/terms">Terms of service</a>
+      <a href="/privacy">Privacy policy</a>
+      <a href="/disclaimer">Investment disclaimer</a>
+      <a href="/risk-disclosure">Risk disclosure</a>
+      <a href="/subscription-terms">Subscription terms</a>
+      <a href="/refund-policy">Refund policy</a>
+      <a href="/cookies">Cookie policy</a>
+    </div>
+  </div>
+  <div class="legal-note">
+    <p><strong>Important:</strong> {{ brand.company }} provides financial information, analytics
+    and research commentary only. Nothing on this website is personal investment advice, an offer,
+    or a solicitation to buy or sell any security. {{ brand.company }} is a technology and research
+    company: it does <strong>not</strong> accept or hold client money, does not hold securities,
+    does not execute trades or manage portfolios for clients, and does not guarantee or promise
+    any return.</p>
+    <p>{{ brand.company }} is not registered or licensed as a financial adviser, portfolio manager,
+    securities brokerage or investment fund by the Egyptian Financial Regulatory Authority (FRA) or
+    any other regulator, and makes no claim to be. Investing in listed securities carries risk,
+    including the loss of the capital invested. Past performance does not indicate future results.
+    You are responsible for your own investment decisions and should seek independent professional
+    advice where appropriate.</p>
+    <p>Market data is provided on the terms shown on each screen, including its source, timestamp
+    and any delay. Where data is unavailable it is labelled as such and never estimated.</p>
+    <p class="mb-0">© {{ year }} {{ brand.company }}. All rights reserved.</p>
+  </div>
+</footer>
+</body>
+</html>
