@@ -523,6 +523,28 @@ p { margin: 0 0 1em; }
 .chart-readout b { color: var(--text-bright); font-weight: 650; }
 .chart-empty { padding: 60px 20px; text-align: center; color: var(--text-faint); font-size: 13px; }
 
+/* Rendered report body */
+.report-body { color: var(--text-dim); font-size: 14px; line-height: 1.72; }
+.report-body h2 {
+  font-size: 20px; margin: 30px 0 12px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.report-body h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.report-body h3 { font-size: 15.5px; margin: 24px 0 8px; color: var(--text); }
+.report-body h4 { font-size: 13.5px; margin: 18px 0 6px; color: var(--text); }
+.report-body p { margin: 0 0 1em; }
+.report-body ul, .report-body ol { padding-left: 22px; margin: 0 0 1em; }
+.report-body li { margin-bottom: 5px; }
+.report-body strong { color: var(--text); }
+.report-body code {
+  font-family: var(--mono); font-size: 12px;
+  background: var(--bg-input); padding: 1px 5px; border-radius: 3px;
+}
+.report-body hr { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
+.report-body blockquote { margin: 0 0 18px; }
+.report-body .tbl-scroll { margin: 0 0 18px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.report-body table { margin: 0; }
+
 /* ==========================================================================
    Forms & buttons
    ========================================================================== */

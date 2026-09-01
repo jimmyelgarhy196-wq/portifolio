@@ -21,7 +21,25 @@
 
 <div class="card">
   <div class="card-body">
-    <pre style="white-space:pre-wrap;font-family:var(--sans);font-size:13.5px;line-height:1.75;color:var(--text-dim);margin:0">{{ report.markdown }}</pre>
+    <article class="report-body">{{ report.markdown | markdown }}</article>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">Report <span class="accent">source</span></h2></div>
+  <div class="card-body">
+    <p class="text-sm dim mb-0">
+      This report was generated from the data stored at the time it ran. Where a
+      figure was unavailable the report says so rather than estimating it, and where
+      no data source exists for a section — macroeconomic figures, for instance — the
+      section states that instead of being filled with plausible prose.
+    </p>
+  </div>
+  <div class="card-foot">
+    <a href="/reports">← All reports</a>
+    {% if report.contains_synthetic %}
+    · <span class="badge badge-demo">Contains demonstration data</span>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

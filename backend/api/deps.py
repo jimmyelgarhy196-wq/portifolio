@@ -47,6 +47,22 @@ templates.env.globals.update({
 })
 
 
+def markdown(text: str | None) -> Any:
+    """Render report Markdown to HTML.
+
+    The renderer escapes before it formats, so the result is safe to mark as
+    such — no markup from the source text can survive into the output.
+    """
+    from markupsafe import Markup
+
+    from backend.api.markdown_render import render_markdown
+
+    return Markup(render_markdown(text))
+
+
+templates.env.filters["markdown"] = markdown
+
+
 def base_context(request: Request, session: Session, **extra: Any) -> dict[str, Any]:
     """Context every page needs: banners, nav state, header stats."""
     from backend.portfolio.paper_trading import get_or_create_portfolio, mark_to_market

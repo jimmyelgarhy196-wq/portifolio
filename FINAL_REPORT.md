@@ -1,6 +1,6 @@
 # GMG Investment Intelligence — Final Build Report
 
-**GMG AI Solutions** · build completed 31 August 2026 · 488 automated tests passing
+**GMG AI Solutions** · build completed 31 August 2026 · 512 automated tests passing
 
 ---
 
@@ -186,7 +186,7 @@ checklist across security, data, legal, billing and operations.
 
 ## 12. Testing performed
 
-**488 automated tests**, 147 written for this platform:
+**512 automated tests**, 171 written for this platform:
 
 - *Market* (31): demo determinism and stamping, the licensed provider refusing rather
   than downgrading, all five freshness badges, index levels never invented, demo
@@ -199,6 +199,10 @@ checklist across security, data, legal, billing and operations.
 - *Analysis* (46): DCF refusals and growth fade, CAPM, sensitivity monotonicity,
   dispersion withholding, rating bands and withholding, screener exclusion on unknown
   values, alerts never firing on demonstration data
+- *Report rendering* (24): headings, tables with numeric alignment, merged
+  blockquotes, and — the reason this renderer exists rather than a dependency —
+  that HTML, `<script>`, event handlers and `javascript:` targets in the source
+  text are all escaped before any formatting is applied
 - *Pre-existing* (341): data quality, scoring, engines, research, portfolio, risk,
   backtesting, reports, API
 

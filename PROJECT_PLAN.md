@@ -4,7 +4,7 @@
 equities, by GMG AI Solutions.**
 
 Status: research engines and the subscription platform implemented and verified.
-488 tests passing. Research and information only — see [`LEGAL.md`](LEGAL.md).
+512 tests passing. Research and information only — see [`LEGAL.md`](LEGAL.md).
 
 ---
 
@@ -323,7 +323,7 @@ They share the research schema's `Base`, so one `init_database()` creates everyt
 
 ## Verification
 
-- **488 automated tests**, including 147 written for this platform: quote provenance,
+- **512 automated tests**, including 171 written for this platform: quote provenance,
   freshness labelling, aggregate contamination, access control at four privilege
   levels, CSRF, per-user data isolation, valuation refusals, rating withholding,
   screener exclusion and alert suppression.
