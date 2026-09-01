@@ -425,12 +425,22 @@ def stock_page(
             ]
 
         if tab == "research":
-            context["thesis"] = db.scalar(
+            thesis = db.scalar(
                 select(ResearchThesis).where(ResearchThesis.ticker == ticker)
                 .order_by(desc(ResearchThesis.updated_at)))
+            context["thesis"] = thesis
             context["recommendation"] = db.scalar(
                 select(Recommendation).where(Recommendation.ticker == ticker)
                 .order_by(desc(Recommendation.created_at)))
+            # Statements carry the agent that produced them and the kind of claim
+            # each one is. Grouped, they read as an argument; concatenated, they
+            # read as a wall of text.
+            grouped: dict[str, list[dict[str, Any]]] = {}
+            for statement in (thesis.statements if thesis else []) or []:
+                if not isinstance(statement, dict):
+                    continue
+                grouped.setdefault(statement.get("agent") or "general", []).append(statement)
+            context["statements"] = list(grouped.items())
 
     if tab in {"news", "overview"}:
         context["news"] = list(db.execute(

@@ -1,8 +1,12 @@
 """Export a full data snapshot as JSON.
 
-Feeds the standalone HTML terminal (egx-alpha-terminal.html), which is a
-read-only build of the same interface with the data embedded, for sharing a
-working view of the system without running the server.
+Originally fed the standalone HTML terminal now kept as
+``legacy-terminal-snapshot.html`` — a frozen, read-only export of an earlier
+build. The current product is the running web application; this script remains
+useful for extracting a complete computed snapshot for analysis or archiving.
+
+Everything it emits carries the provenance stored with it, so a consumer can
+still tell demonstration data from real data.
 
     python scripts/export_snapshot.py > snapshot.json
 """

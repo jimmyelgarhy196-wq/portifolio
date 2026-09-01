@@ -221,7 +221,7 @@ def check_high_conviction(
             session, alert_type="HIGH_CONVICTION", ticker=row.ticker, severity="info",
             title=f"{row.ticker} scores {row.alpha_score:.0f} and is not held",
             message=(
-                f"{row.ticker} has an GMG score of {row.alpha_score:.0f} "
+                f"{row.ticker} has a GMG score of {row.alpha_score:.0f} "
                 f"(confidence {row.confidence}) and is not in the portfolio. "
                 "Review the thesis."
             ),

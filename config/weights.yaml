@@ -1,12 +1,12 @@
 # =============================================================================
-# EGX ALPHA — Scoring weights
+# GMG Investment Intelligence — Scoring weights
 # =============================================================================
 # Every weight here is editable from the Settings page at runtime.
 # Weights within each block are normalised to sum to 1.0 before use, so you can
 # express them as percentages, decimals, or arbitrary relative numbers.
 # =============================================================================
 
-# --- Master EGX ALPHA score --------------------------------------------------
+# --- Master GMG score --------------------------------------------------
 alpha:
   fundamental: 30
   technical:   20

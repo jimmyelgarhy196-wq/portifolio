@@ -68,7 +68,29 @@
         <div class="v sm">{{ thesis.expected_holding_period or 'N/A' }}</div></div>
     </div>
 
-    {% if thesis.thesis_text %}
+    {% if statements %}
+    <h3>Thesis</h3>
+    <p class="text-xs faint">
+      Every statement is tagged by what kind of claim it is. A <strong>fact</strong> comes
+      from a stored figure, a <strong>calculation</strong> is arithmetic over facts, an
+      <strong>inference</strong> is a judgement drawn from them, and an
+      <strong>opinion</strong> is neither. Nothing here is checked against reality by GMG —
+      the tags tell you how much weight each line can carry.
+    </p>
+    <div class="claims">
+      {% for group, items in statements %}
+      <div class="claim-group">
+        <div class="claim-group-title">{{ group | replace('_', ' ') | title }}</div>
+        {% for item in items %}
+        <div class="claim">
+          <span class="claim-tag claim-{{ item.claim }}">{{ item.claim }}</span>
+          <span class="claim-text">{{ item.text }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% elif thesis.thesis_text %}
     <h3>Thesis</h3>
     <p class="text-sm dim">{{ thesis.thesis_text }}</p>
     {% endif %}
@@ -88,13 +110,33 @@
       <div>
         <h3>Catalysts</h3>
         {% if thesis.catalysts %}
-        <ul class="text-sm dim">{% for c in thesis.catalysts %}<li>{{ c }}</li>{% endfor %}</ul>
+        <ul class="event-list">
+          {% for c in thesis.catalysts %}
+          <li>
+            {% if c is mapping %}
+              <div class="event-head">
+                <span class="badge badge-muted">{{ c.kind or 'Event' }}</span>
+                {% if c.date %}<span class="faint text-xs">{{ c.date }}</span>{% endif %}
+              </div>
+              {% if c.url %}<a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">{{ c.title }}</a>
+              {% else %}<span class="text-sm">{{ c.title }}</span>{% endif %}
+              {% if c.source %}<div class="text-xs faint">{{ c.source }}</div>{% endif %}
+            {% else %}
+              <span class="text-sm">{{ c }}</span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
         {% else %}<p class="na">None recorded.</p>{% endif %}
       </div>
       <div>
         <h3>Risks</h3>
         {% if thesis.risks %}
-        <ul class="text-sm dim">{% for r in thesis.risks %}<li>{{ r }}</li>{% endfor %}</ul>
+        <ul class="text-sm dim">
+          {% for r in thesis.risks %}
+          <li>{{ r.title if r is mapping else r }}</li>
+          {% endfor %}
+        </ul>
         {% else %}<p class="na">None recorded.</p>{% endif %}
       </div>
     </div>

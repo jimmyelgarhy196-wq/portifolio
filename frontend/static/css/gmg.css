@@ -448,6 +448,36 @@ p { margin: 0 0 1em; }
 .subscore.missing .lbl, .subscore.missing .val { color: var(--text-faint); font-style: italic; }
 .subscore.missing .fill { background: var(--border-bright); }
 
+/* Claim-tagged research statements: the tag says what kind of claim a line is,
+   so a reader can weigh an inference differently from a reported fact. */
+.claims { margin: 14px 0; }
+.claim-group { margin-bottom: 16px; }
+.claim-group-title {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--gold); padding-bottom: 5px; margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.claim { display: flex; gap: 9px; align-items: baseline; margin-bottom: 6px; font-size: 12.5px; }
+.claim-tag {
+  flex: none; min-width: 78px; text-align: center;
+  padding: 1px 6px; border-radius: 3px;
+  font-size: 8.5px; font-weight: 750; letter-spacing: .08em;
+  font-family: var(--mono);
+}
+.claim-FACT        { background: rgba(33,199,122,.16);  color: var(--up-bright); }
+.claim-CALCULATION { background: rgba(76,159,255,.16);  color: var(--accent-bright); }
+.claim-INFERENCE   { background: rgba(240,180,41,.16);  color: var(--amber); }
+.claim-OPINION     { background: rgba(199,125,255,.16); color: #dfb2ff; }
+.claim-UNKNOWN     { background: rgba(145,160,181,.14); color: var(--text-dim); }
+.claim-text { color: var(--text-dim); line-height: 1.55; }
+
+.event-list { list-style: none; padding: 0; margin: 0; }
+.event-list li {
+  padding: 8px 0; border-bottom: 1px solid rgba(28,36,50,.6);
+}
+.event-list li:last-child { border-bottom: none; }
+.event-head { display: flex; gap: 8px; align-items: center; margin-bottom: 3px; }
+
 /* ==========================================================================
    Tabs
    ========================================================================== */

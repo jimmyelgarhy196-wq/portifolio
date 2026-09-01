@@ -1,5 +1,4 @@
-12:00:54 INFO    backend.core.database        Database initialised at sqlite:////home/user/portifolio/database/egx_alpha.db
-# EGX ALPHA — Database Schema
+# GMG — Database Schema
 
 Auto-generated from the SQLAlchemy models. Regenerate after a model change with:
 
@@ -19,7 +18,17 @@ the storage layer rather than by convention. Those tables are marked
 
 `recommendations`, `score_history`, `thesis_versions` and `reports` are never
 updated in place. They are the system's memory, and grading its own past
-predictions depends on that history being immutable.
+predictions depends on that history being immutable. `audit_log`, `email_log`
+and `login_attempts` are append-only for the same reason: they are the record
+of what happened, not a mutable view of the present.
+
+## Secrets
+
+No table stores a plaintext password, a usable session token, or a card number.
+`users.password_hash` is an Argon2id hash; `user_sessions.token_hash` and
+`one_time_tokens.token_hash` are SHA-256 digests of values held only by the
+client. There is no card-handling column anywhere, because there is no
+card-handling code.
 
 ---
 
@@ -41,6 +50,26 @@ Generated alerts. Notifications are dispatched only when a channel is explicitly
 | `notified` | BOOLEAN | no |  |
 
 **Indexes:** `ix_alert_created` (created_at, status), `ix_alerts_alert_type` (alert_type), `ix_alerts_created_at` (created_at), `ix_alerts_ticker` (ticker)
+
+---
+
+## `audit_logs`
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | yes |  |
+| `actor_email` | VARCHAR(255) | yes |  |
+| `action` | VARCHAR(64) | no |  |
+| `target` | VARCHAR(160) | yes |  |
+| `ip` | VARCHAR(64) | yes |  |
+| `user_agent` | VARCHAR(255) | yes |  |
+| `detail` | JSON | no |  |
+| `created_at` | DATETIME | no |  |
+
+**Indexes:** `ix_audit_action_time` (action, created_at), `ix_audit_logs_created_at` (created_at), `ix_audit_logs_user_id` (user_id)
+
+**Foreign keys:** user_id → users.id
 
 ---
 
@@ -116,6 +145,30 @@ Audit trail of every ingestion run: provider, status, rows in, rows skipped, and
 
 ---
 
+## `data_sources`
+
+Registry of every configured provider with its last success, last error, credential state and whether it serves demonstration data. Backs the public /data-sources page.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `name` | VARCHAR(64) | no |  |
+| `kind` | VARCHAR(32) | no |  |
+| `enabled` | BOOLEAN | no |  |
+| `is_demo` | BOOLEAN | no |  |
+| `requires_credentials` | BOOLEAN | no |  |
+| `credentials_present` | BOOLEAN | no |  |
+| `delayed_minutes` | INTEGER | no |  |
+| `last_success_at` | DATETIME | yes |  |
+| `last_error_at` | DATETIME | yes |  |
+| `last_error` | TEXT | yes |  |
+| `notes` | TEXT | yes |  |
+| `updated_at` | DATETIME | no |  |
+
+**Unique constraints:** `None` (name)
+
+---
+
 ## `disclosures`  **(provenance)**
 
 Official corporate disclosures, classified by type and importance. These drive the catalyst score.
@@ -139,6 +192,28 @@ Official corporate disclosures, classified by type and importance. These drive t
 **Unique constraints:** `uq_disclosure_url_hash` (url_hash)
 
 **Indexes:** `ix_disclosure_ticker_date` (ticker, date), `ix_disclosures_date` (date), `ix_disclosures_ticker` (ticker)
+
+---
+
+## `email_log`
+
+Every email the system attempted and its outcome, so a delivery failure is visible rather than silent.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | yes |  |
+| `to_email` | VARCHAR(255) | no |  |
+| `template` | VARCHAR(64) | no |  |
+| `subject` | VARCHAR(255) | no |  |
+| `provider` | VARCHAR(32) | no |  |
+| `status` | VARCHAR(16) | no |  |
+| `error` | TEXT | yes |  |
+| `created_at` | DATETIME | no |  |
+
+**Indexes:** `ix_email_log_created_at` (created_at), `ix_email_log_template` (template), `ix_email_log_user_id` (user_id), `ix_email_to_time` (to_email, created_at)
+
+**Foreign keys:** user_id → users.id
 
 ---
 
@@ -182,6 +257,52 @@ Reported financials. `available_from` records when a statement was actually publ
 
 ---
 
+## `login_attempts`
+
+Every sign-in attempt, successful or not. Drives per-email and per-IP lockout.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `email` | VARCHAR(255) | no |  |
+| `ip` | VARCHAR(64) | yes |  |
+| `successful` | BOOLEAN | no |  |
+| `created_at` | DATETIME | no |  |
+
+**Indexes:** `ix_login_attempts_created_at` (created_at), `ix_login_attempts_ip` (ip), `ix_login_email_time` (email, created_at)
+
+---
+
+## `market_quotes`
+
+The quote cache. Each row carries `source`, `quote_time`, `retrieved_at`, `delayed_minutes` and `is_demo`, which travel unchanged into the UI — this is what makes a price's freshness impossible to misrepresent.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `ticker` | VARCHAR(24) | no |  |
+| `price` | FLOAT | yes |  |
+| `previous_close` | FLOAT | yes |  |
+| `change` | FLOAT | yes |  |
+| `change_pct` | FLOAT | yes |  |
+| `open` | FLOAT | yes |  |
+| `day_high` | FLOAT | yes |  |
+| `day_low` | FLOAT | yes |  |
+| `volume` | FLOAT | yes |  |
+| `turnover` | FLOAT | yes |  |
+| `trades` | INTEGER | yes |  |
+| `week52_high` | FLOAT | yes |  |
+| `week52_low` | FLOAT | yes |  |
+| `market_cap` | FLOAT | yes |  |
+| `currency` | VARCHAR(8) | no |  |
+| `quote_time` | DATETIME | yes |  |
+| `retrieved_at` | DATETIME | no |  |
+| `source` | VARCHAR(64) | no |  |
+| `delayed_minutes` | INTEGER | no |  |
+| `market_status` | VARCHAR(16) | no |  |
+| `is_demo` | BOOLEAN | no |  |
+
+---
+
 ## `news`  **(provenance)**
 
 News items with lexicon sentiment. `sentiment` is NULL when no lexicon term matched — 'no signal' and 'neutral' are different claims.
@@ -207,6 +328,57 @@ News items with lexicon sentiment. `sentiment` is NULL when no lexicon term matc
 **Unique constraints:** `uq_news_url_hash` (url_hash)
 
 **Indexes:** `ix_news_publication_date` (publication_date), `ix_news_ticker` (ticker), `ix_news_ticker_date` (ticker, publication_date)
+
+---
+
+## `one_time_tokens`
+
+Email-verification and password-reset tokens, stored hashed and single-use. Issuing a new token for a purpose retires any outstanding one.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `purpose` | VARCHAR(32) | no |  |
+| `token_hash` | VARCHAR(64) | no |  |
+| `created_at` | DATETIME | no |  |
+| `expires_at` | DATETIME | no |  |
+| `used_at` | DATETIME | yes |  |
+| `meta` | JSON | no |  |
+
+**Unique constraints:** `None` (token_hash)
+
+**Indexes:** `ix_one_time_tokens_user_id` (user_id), `ix_ott_user_purpose` (user_id, purpose)
+
+**Foreign keys:** user_id → users.id
+
+---
+
+## `payments`
+
+Payment records. Rows are created PENDING and only move to SUCCEEDED when a verified gateway webhook, or an audited administrator action, confirms money arrived. Nothing in this codebase charges a card.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `subscription_id` | INTEGER | yes |  |
+| `amount_egp` | FLOAT | no |  |
+| `currency` | VARCHAR(8) | no |  |
+| `status` | VARCHAR(16) | no |  |
+| `provider` | VARCHAR(48) | no |  |
+| `external_id` | VARCHAR(128) | yes |  |
+| `description` | VARCHAR(255) | yes |  |
+| `failure_reason` | TEXT | yes |  |
+| `created_at` | DATETIME | no |  |
+| `settled_at` | DATETIME | yes |  |
+| `period_start` | DATE | yes |  |
+| `period_end` | DATE | yes |  |
+| `meta` | JSON | no |  |
+
+**Indexes:** `ix_payments_created_at` (created_at), `ix_payments_external_id` (external_id), `ix_payments_status` (status), `ix_payments_subscription_id` (subscription_id), `ix_payments_user_id` (user_id), `ix_payments_user_time` (user_id, created_at)
+
+**Foreign keys:** user_id → users.id, subscription_id → subscriptions.id
 
 ---
 
@@ -415,6 +587,27 @@ Durable investment theses. One per (ticker, direction), updated weekly rather th
 
 ---
 
+## `saved_screens`
+
+Saved screener criteria, stored as JSON. Unique per (user, name).
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `name` | VARCHAR(96) | no |  |
+| `filters` | JSON | no |  |
+| `created_at` | DATETIME | no |  |
+| `updated_at` | DATETIME | no |  |
+
+**Unique constraints:** `uq_screen_user_name` (user_id, name)
+
+**Indexes:** `ix_saved_screens_user_id` (user_id)
+
+**Foreign keys:** user_id → users.id
+
+---
+
 ## `score_history`
 
 Score per ticker per date. APPEND-ONLY, powering week-over-week deltas and score-change alerts.
@@ -450,6 +643,37 @@ User settings overriding YAML and environment defaults.
 | `key` | VARCHAR(96) | no |  |
 | `value` | JSON | no |  |
 | `updated_at` | DATETIME | no |  |
+
+---
+
+## `subscriptions`
+
+Subscription state. Status alone never grants access: `is_entitled()` also checks `current_period_end`, so an ACTIVE row past its period is denied and a CANCELLED row inside its paid period is honoured.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `plan_code` | VARCHAR(64) | no |  |
+| `plan_name` | VARCHAR(128) | no |  |
+| `status` | VARCHAR(16) | no |  |
+| `price_egp` | FLOAT | no |  |
+| `interval` | VARCHAR(16) | no |  |
+| `created_at` | DATETIME | no |  |
+| `updated_at` | DATETIME | no |  |
+| `trial_ends_at` | DATETIME | yes |  |
+| `current_period_start` | DATETIME | yes |  |
+| `current_period_end` | DATETIME | yes |  |
+| `cancelled_at` | DATETIME | yes |  |
+| `cancel_reason` | TEXT | yes |  |
+| `ended_at` | DATETIME | yes |  |
+| `external_id` | VARCHAR(128) | yes |  |
+| `provider` | VARCHAR(48) | yes |  |
+| `meta` | JSON | no |  |
+
+**Indexes:** `ix_subs_user_status` (user_id, status), `ix_subscriptions_created_at` (created_at), `ix_subscriptions_current_period_end` (current_period_end), `ix_subscriptions_external_id` (external_id), `ix_subscriptions_status` (status), `ix_subscriptions_user_id` (user_id)
+
+**Foreign keys:** user_id → users.id
 
 ---
 
@@ -501,6 +725,166 @@ Immutable paper-trade ledger with commission and slippage on every fill.
 **Indexes:** `ix_trade_portfolio_date` (portfolio_id, executed_at), `ix_trades_executed_at` (executed_at), `ix_trades_portfolio_id` (portfolio_id), `ix_trades_ticker` (ticker)
 
 **Foreign keys:** portfolio_id → portfolios.portfolio_id
+
+---
+
+## `user_alerts`
+
+Price, percentage-move, RSI, 52-week and moving-average alerts. An alert never fires on demonstration data, and is skipped with a recorded reason when the value it needs is unavailable.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `ticker` | VARCHAR(24) | no |  |
+| `condition` | VARCHAR(32) | no |  |
+| `threshold` | FLOAT | yes |  |
+| `note` | TEXT | yes |  |
+| `active` | BOOLEAN | no |  |
+| `email_delivery` | BOOLEAN | no |  |
+| `created_at` | DATETIME | no |  |
+| `last_triggered_at` | DATETIME | yes |  |
+| `trigger_count` | INTEGER | no |  |
+| `last_message` | TEXT | yes |  |
+
+**Indexes:** `ix_user_alerts_ticker` (ticker), `ix_user_alerts_user_id` (user_id), `ix_useralert_active` (user_id, active)
+
+**Foreign keys:** user_id → users.id
+
+---
+
+## `user_portfolio_positions`
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `portfolio_id` | INTEGER | no |  |
+| `ticker` | VARCHAR(24) | no |  |
+| `shares` | FLOAT | no |  |
+| `purchase_price` | FLOAT | no |  |
+| `purchase_date` | DATE | yes |  |
+| `note` | TEXT | yes |  |
+| `created_at` | DATETIME | no |  |
+
+**Indexes:** `ix_user_portfolio_positions_portfolio_id` (portfolio_id), `ix_user_portfolio_positions_ticker` (ticker), `ix_userpos_portfolio` (portfolio_id, ticker)
+
+**Foreign keys:** portfolio_id → user_portfolios.id
+
+---
+
+## `user_portfolios`
+
+Subscriber portfolios. A tracking record only: GMG holds no securities and places no orders.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `name` | VARCHAR(96) | no |  |
+| `currency` | VARCHAR(8) | no |  |
+| `description` | TEXT | yes |  |
+| `created_at` | DATETIME | no |  |
+| `updated_at` | DATETIME | no |  |
+
+**Unique constraints:** `uq_portfolio_user_name` (user_id, name)
+
+**Indexes:** `ix_user_portfolios_user_id` (user_id)
+
+**Foreign keys:** user_id → users.id
+
+---
+
+## `user_sessions`
+
+Sign-in sessions. Only the SHA-256 digest of the token is stored, so a copy of this table yields no usable session. `epoch` is compared against the user's, so a password change retires every row.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `token_hash` | VARCHAR(64) | no |  |
+| `epoch` | INTEGER | no |  |
+| `created_at` | DATETIME | no |  |
+| `expires_at` | DATETIME | no |  |
+| `last_seen_at` | DATETIME | no |  |
+| `ip` | VARCHAR(64) | yes |  |
+| `user_agent` | VARCHAR(255) | yes |  |
+| `revoked_at` | DATETIME | yes |  |
+
+**Unique constraints:** `None` (token_hash)
+
+**Indexes:** `ix_sessions_user_expiry` (user_id, expires_at), `ix_user_sessions_user_id` (user_id)
+
+**Foreign keys:** user_id → users.id
+
+---
+
+## `user_watchlist_items`
+
+Tickers on a watchlist, with an optional note and target price.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `watchlist_id` | INTEGER | no |  |
+| `ticker` | VARCHAR(24) | no |  |
+| `note` | TEXT | yes |  |
+| `target_price` | FLOAT | yes |  |
+| `added_at` | DATETIME | no |  |
+
+**Unique constraints:** `uq_watchlist_item` (watchlist_id, ticker)
+
+**Indexes:** `ix_user_watchlist_items_ticker` (ticker), `ix_user_watchlist_items_watchlist_id` (watchlist_id)
+
+**Foreign keys:** watchlist_id → user_watchlists.id
+
+---
+
+## `user_watchlists`
+
+Subscriber watchlists. Unique per (user, name).
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `user_id` | INTEGER | no |  |
+| `name` | VARCHAR(96) | no |  |
+| `description` | TEXT | yes |  |
+| `created_at` | DATETIME | no |  |
+| `updated_at` | DATETIME | no |  |
+
+**Unique constraints:** `uq_watchlist_user_name` (user_id, name)
+
+**Indexes:** `ix_user_watchlists_user_id` (user_id)
+
+**Foreign keys:** user_id → users.id
+
+---
+
+## `users`
+
+Subscriber accounts. `password_hash` is Argon2id; the plaintext never reaches the database, a log or an audit row. `session_epoch` is bumped on a password change, which invalidates every existing session at once.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| `id` | INTEGER | no |  |
+| `email` | VARCHAR(255) | no |  |
+| `password_hash` | VARCHAR(255) | no |  |
+| `full_name` | VARCHAR(160) | yes |  |
+| `role` | VARCHAR(16) | no |  |
+| `status` | VARCHAR(16) | no |  |
+| `email_verified_at` | DATETIME | yes |  |
+| `created_at` | DATETIME | no |  |
+| `updated_at` | DATETIME | no |  |
+| `last_login_at` | DATETIME | yes |  |
+| `last_login_ip` | VARCHAR(64) | yes |  |
+| `session_epoch` | INTEGER | no |  |
+| `marketing_opt_in` | BOOLEAN | no |  |
+| `preferences` | JSON | no |  |
+
+**Unique constraints:** `None` (email)
+
+**Indexes:** `ix_users_created_at` (created_at), `ix_users_email_lower` (email)
 
 ---
 

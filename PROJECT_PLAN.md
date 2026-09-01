@@ -4,7 +4,7 @@
 equities, by GMG AI Solutions.**
 
 Status: research engines and the subscription platform implemented and verified.
-485 tests passing. Research and information only — see [`LEGAL.md`](LEGAL.md).
+488 tests passing. Research and information only — see [`LEGAL.md`](LEGAL.md).
 
 ---
 
@@ -196,7 +196,7 @@ relative strength, volatility posture, support/resistance location.
 **Quant (0–100)** — cross-sectional factor z-scores over the EGX universe:
 Momentum 25, Value 20, Quality 20, Growth 15, Liquidity 10, Volatility 10.
 
-**EGX ALPHA master score (0–100)** — Fundamental 30, Technical 20, Quant 15,
+**GMG master score (0–100)** — Fundamental 30, Technical 20, Quant 15,
 Catalysts 10, Quality 10, Risk 10, Sentiment 5.
 
 All weights live in `config/weights.yaml` and are editable from Settings.
@@ -323,7 +323,7 @@ They share the research schema's `Base`, so one `init_database()` creates everyt
 
 ## Verification
 
-- **485 automated tests**, including 144 written for this platform: quote provenance,
+- **488 automated tests**, including 147 written for this platform: quote provenance,
   freshness labelling, aggregate contamination, access control at four privilege
   levels, CSRF, per-user data isolation, valuation refusals, rating withholding,
   screener exclusion and alert suppression.

@@ -244,6 +244,79 @@ class TestCsrf:
         assert "Core" in app_client.get("/watchlists").text
 
 
+class TestResearchPresentation:
+    """Structured research must render as structure, not as Python reprs."""
+
+    def _thesis(self, client, user_id: int):
+        from backend.data.models import ResearchThesis
+
+        db = client.session_factory()
+        try:
+            db.add(ResearchThesis(
+                reference="EGX-00001", ticker="TEST", direction="LONG",
+                strategy="fundamental_long", status="ACTIVE", conviction=6.5,
+                alpha_score=74.0, expected_holding_period="6-36+ months",
+                thesis_text="A narrative.",
+                bull_case="The bull case.", bear_case="The bear case.",
+                catalysts=[{
+                    "kind": "Board", "title": "Board meeting outcome",
+                    "date": "2026-08-27", "importance": 2,
+                    "source": "EGX:disclosures", "url": None,
+                }],
+                risks=["Liquidity is thin."],
+                invalidation_conditions=["A close below 50."],
+                statements=[
+                    {"agent": "fundamental", "claim": "FACT",
+                     "text": "Net margin is 42.0%.", "sources": ["EGX:filings"]},
+                    {"agent": "fundamental", "claim": "INFERENCE",
+                     "text": "Leverage is low.", "sources": []},
+                    {"agent": "technical", "claim": "CALCULATION",
+                     "text": "Price is 16.1% above the 200-day SMA.", "sources": []},
+                ],
+                data_sources=["EGX:filings"],
+            ))
+            db.commit()
+        finally:
+            db.close()
+
+    def test_catalysts_render_as_records_not_dict_reprs(self, app_client):
+        token = make_user(app_client, "research@example.com",
+                          status=SubscriptionStatus.ACTIVE.value)
+        sign_in(app_client, token)
+        self._thesis(app_client, 1)
+        body = app_client.get("/stock/TEST?tab=research").text
+        assert "Board meeting outcome" in body
+        assert "'kind':" not in body, "a stored dict must not be printed raw"
+        assert "{'" not in body
+
+    def test_statements_render_with_their_claim_tags(self, app_client):
+        sign_in(app_client, make_user(app_client, "research2@example.com",
+                                      status=SubscriptionStatus.ACTIVE.value))
+        self._thesis(app_client, 1)
+        body = app_client.get("/stock/TEST?tab=research").text
+        # Each claim keeps the tag that says how much weight it can carry.
+        assert 'claim-FACT' in body
+        assert 'claim-INFERENCE' in body
+        assert 'claim-CALCULATION' in body
+        assert "Net margin is 42.0%." in body
+        # Grouped by the agent that produced them.
+        assert "Fundamental" in body and "Technical" in body
+
+    def test_rating_is_withheld_when_there_is_nothing_to_score(self, app_client):
+        """TEST has no price history, so no rating may be published.
+
+        The page must say that rather than defaulting to HOLD, which would be
+        a recommendation manufactured out of an absence of data.
+        """
+        sign_in(app_client, make_user(app_client, "research3@example.com",
+                                      status=SubscriptionStatus.ACTIVE.value))
+        body = app_client.get("/stock/TEST?tab=research").text
+        assert "N/A" in body or "withheld" in body.lower()
+        # No rating chip of any kind is rendered.
+        for verdict in ("Strong Buy", "rating-buy", "rating-hold", "rating-sell"):
+            assert verdict not in body
+
+
 class TestDuplicateNames:
     """Unique constraints must surface as messages, never as a 500."""
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# EGX ALPHA — News feeds
+# GMG Investment Intelligence — News feeds
 # =============================================================================
 # No feeds are enabled by default. Shipping a hardcoded list would silently
 # decide what this system reads and treat those sources as authoritative.

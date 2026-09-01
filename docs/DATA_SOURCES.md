@@ -1,4 +1,4 @@
-# Getting Real Data Into EGX ALPHA
+# Getting real data into GMG Investment Intelligence
 
 The system ships with **no market data**. That is deliberate: an empty terminal is
 honest, and a pre-filled one would be lying about what it knows. This document

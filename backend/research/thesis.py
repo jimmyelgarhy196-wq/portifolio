@@ -298,7 +298,7 @@ def upsert_thesis(
         thesis = ResearchThesis(reference=next_reference(session), version=1, **payload)
         session.add(thesis)
         session.flush()
-        change_summary = f"Thesis opened at an GMG score of {alpha.value:.0f}." if alpha.value is not None else "Thesis opened."
+        change_summary = f"Thesis opened at a GMG score of {alpha.value:.0f}." if alpha.value is not None else "Thesis opened."
     else:
         thesis = existing
         before = {field: getattr(thesis, field) for field, _l, _k in TRACKED_FIELDS}
