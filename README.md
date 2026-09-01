@@ -177,7 +177,7 @@ execution path anywhere in this repository.
 ## Testing
 
 ```bash
-pytest                    # 473 tests
+pytest                    # 485 tests
 pytest --cov=backend      # with coverage
 ```
 
