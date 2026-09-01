@@ -1,0 +1,70 @@
+# GMG Investment Intelligence — Fly.io
+#
+#   fly launch --no-deploy --copy-config
+#   fly postgres create --name gmg-db && fly postgres attach gmg-db
+#   fly secrets set EGX_AUTH_SECRET="$(python -c 'import secrets;print(secrets.token_urlsafe(48))')"
+#   fly secrets set EGX_BASE_URL="https://<your-app>.fly.dev" \
+#                   EGX_SMTP_HOST=... EGX_SMTP_USER=... EGX_SMTP_PASSWORD=... \
+#                   EGX_EMAIL_FROM=... EGX_ADMIN_EMAIL=...
+#   fly deploy
+#
+# `fly postgres attach` sets DATABASE_URL. Map it in the [env] block below, or
+# set EGX_DATABASE_URL directly with the postgresql+psycopg:// scheme —
+# SQLAlchemy needs the driver named, and Fly's default URL does not name it.
+
+app = "gmg-investment-intelligence"
+primary_region = "cdg"          # Paris: the closest Fly region to Cairo
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  EGX_ENV = "production"
+  EGX_HOST = "0.0.0.0"
+  EGX_PORT = "8000"
+  EGX_COOKIE_SECURE = "true"      # Fly terminates TLS in front of the app
+  EGX_LOG_FORMAT = "json"
+  EGX_ALLOW_SYNTHETIC_DATA = "false"
+  EGX_REQUIRE_EMAIL_VERIFICATION = "true"
+  # The scheduler runs in its own process group, not in the web machines.
+  EGX_SCHEDULER_ENABLED = "false"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # One machine stays up: a cold start on a subscriber's first request is a
+  # poor first impression, and the quote cache warms on boot.
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 60
+    hard_limit = 80
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "20s"
+  method = "GET"
+  path = "/api/health"
+
+[processes]
+  app = """gunicorn backend.api.app:app -k uvicorn.workers.UvicornWorker \
+           --bind 0.0.0.0:8000 --workers 2 --timeout 60 \
+           --access-logfile - --error-logfile -"""
+  # Exactly one scheduler machine. Scale it with `fly scale count scheduler=1`
+  # and never above one: two would email every subscriber two weekly reports.
+  scheduler = "python scripts/run_server.py --scheduler-only"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"                  # Argon2id is configured for 64 MiB per hash
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  processes = ["scheduler"]

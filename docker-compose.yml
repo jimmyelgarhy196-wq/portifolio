@@ -1,0 +1,75 @@
+# GMG Investment Intelligence — self-hosted stack for a single VPS.
+#
+#   cp .env.example .env      # then fill it in; see DEPLOYMENT.md
+#   docker compose up -d --build
+#
+# Three services: the application, PostgreSQL, and a scheduler running the
+# weekly report and alert sweeps. The scheduler is a SEPARATE container running
+# exactly one replica — running it inside the web workers would fire the weekly
+# report once per worker.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gmg}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-gmg}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gmg} -d ${POSTGRES_DB:-gmg}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not published: only the application needs to reach it.
+    expose:
+      - "5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      EGX_ENV: production
+      EGX_DATABASE_URL: >-
+        postgresql+psycopg://${POSTGRES_USER:-gmg}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gmg}
+      # The web containers never run the scheduler; the sidecar below does.
+      EGX_SCHEDULER_ENABLED: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"   # bound to loopback; nginx terminates TLS
+    volumes:
+      - app-data:/app/data
+
+  scheduler:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      EGX_ENV: production
+      EGX_DATABASE_URL: >-
+        postgresql+psycopg://${POSTGRES_USER:-gmg}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gmg}
+      EGX_SCHEDULER_ENABLED: "true"
+      GMG_SKIP_INIT: "true"     # the app container already created the schema
+    depends_on:
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
+    # One replica, always. Two would send every subscriber two weekly reports
+    # and two copies of every alert.
+    deploy:
+      replicas: 1
+    # Runs the weekly report, the daily snapshot, the alert sweep (every 15
+    # minutes through the EGX session) and nightly subscription expiry.
+    command: ["python", "scripts/run_server.py", "--scheduler-only"]
+    volumes:
+      - app-data:/app/data
+
+volumes:
+  db-data:
+  app-data:

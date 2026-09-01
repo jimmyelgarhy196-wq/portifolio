@@ -219,7 +219,97 @@ payment records and every user's watchlists and portfolio.
 - [ ] Email delivery verified end to end (register a test account and reset its password)
 - [ ] Error monitoring in place
 
-## 11. Health
+## 11. Containers
+
+The repository ships a production `Dockerfile`, a `docker-compose.yml` for a
+single VPS, and configs for Fly.io and Railway. All three platforms build the
+same image.
+
+### The image
+
+Two stages, so the runtime carries no compiler and no build cache. It runs as a
+non-root user (`uid 10001`), writes only to `/app/data`, and its `HEALTHCHECK`
+calls `/api/health` — which reports the real quote provider and whether payments
+are actually processed, so a green container is one that can answer for itself.
+
+`docker-entrypoint.sh` refuses to start in production without
+`EGX_AUTH_SECRET`, refuses outright with `EGX_ALLOW_SYNTHETIC_DATA=true` in
+production, and warns when `EGX_COOKIE_SECURE` is not set. Failing at boot beats
+serving with a forgeable session cookie.
+
+```bash
+docker build -t gmg .
+docker run --env-file .env -p 8000:8000 gmg
+```
+
+### A VPS with Compose
+
+```bash
+cp .env.example .env          # fill it in, including POSTGRES_PASSWORD
+docker compose up -d --build
+```
+
+Three services: the application, PostgreSQL, and **a separate scheduler
+container**. That separation matters. The scheduler runs the weekly report, the
+daily snapshot, the alert sweep and subscription expiry; running it inside the
+web workers would generate the weekly report once per worker and email every
+subscriber four copies. The web containers therefore set
+`EGX_SCHEDULER_ENABLED=false`, and the scheduler runs one replica — never two.
+
+The app binds to `127.0.0.1:8000` only. Put nginx in front:
+
+```bash
+sudo cp deploy/nginx.conf /etc/nginx/sites-available/gmg
+sudo ln -s /etc/nginx/sites-available/gmg /etc/nginx/sites-enabled/
+sudo certbot --nginx -d your-domain
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+`deploy/nginx.conf` sets HSTS, a tight Content-Security-Policy (the app loads no
+third-party scripts, fonts, frames or analytics, so it can afford to be tight),
+an edge rate limit on the auth routes, and — importantly — `X-Forwarded-For`.
+The application keys rate limiting and account lockout off that header; without
+it every request appears to come from the proxy and the limits protect nothing.
+
+### Fly.io
+
+```bash
+fly launch --no-deploy --copy-config
+fly postgres create --name gmg-db && fly postgres attach gmg-db
+fly secrets set EGX_AUTH_SECRET="$(python -c 'import secrets;print(secrets.token_urlsafe(48))')"
+fly secrets set EGX_BASE_URL="https://<your-app>.fly.dev" \
+                EGX_SMTP_HOST=... EGX_SMTP_USER=... EGX_SMTP_PASSWORD=... \
+                EGX_EMAIL_FROM=... EGX_ADMIN_EMAIL=...
+fly deploy
+fly scale count scheduler=1     # exactly one, never more
+```
+
+`fly postgres attach` sets `DATABASE_URL`, which does **not** name a driver.
+SQLAlchemy needs one, so set `EGX_DATABASE_URL` yourself with the
+`postgresql+psycopg://` scheme rather than relying on the attached value.
+
+### Railway
+
+Point Railway at the repo; `railway.json` selects the Dockerfile and the health
+check. Add a PostgreSQL plugin, then set `EGX_AUTH_SECRET`, `EGX_BASE_URL` and
+`EGX_DATABASE_URL` (again with the `postgresql+psycopg://` scheme). Railway
+injects `$PORT`, which the start command already honours.
+
+Railway runs one service per deployment, so add a **second service from the same
+repo** with the start command `python scripts/run_server.py --scheduler-only`
+and `EGX_SCHEDULER_ENABLED=true`, left at one replica.
+
+### Whichever platform
+
+The scheduler is the one component that must not be scaled horizontally. The web
+tier can run as many replicas as you like: sessions and the quote cache live in
+the database. Only the in-process rate limiter is per-node — move it to Redis
+(`backend/api/auth_deps.py::rate_limit`) before running several web nodes, or
+lean on the edge limit in nginx.
+
+---
+
+## 12. Health
 
 `GET /api/health` returns status and mode. The admin panel at `/admin` shows
 user and subscription counts, quote-provider status, email delivery outcomes,

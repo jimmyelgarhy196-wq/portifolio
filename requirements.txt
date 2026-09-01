@@ -1,16 +1,36 @@
-anthropic==1.2.0
-APScheduler==3.11.3
+# GMG Investment Intelligence — runtime dependencies
+#
+# Install with:  pip install -r requirements.txt
+# Development and test extras live in requirements-dev.txt.
+
+# --- Web ---------------------------------------------------------------------
 fastapi==0.141.1
-httpx==0.28.1
+uvicorn==0.52.4
+gunicorn==26.2.0              # production process manager (see DEPLOYMENT.md)
+python-multipart==0.0.32      # form parsing for every POST in the app
 Jinja2==3.1.6
-lxml==6.1.2
+
+# --- Data --------------------------------------------------------------------
+SQLAlchemy==2.0.52
+psycopg[binary]==3.3.5        # PostgreSQL driver; SQLite needs no driver
 numpy==2.4.6
 pandas==3.0.5
+lxml==6.1.2
+
+# --- Configuration -----------------------------------------------------------
 pydantic==2.13.5
 pydantic-settings==2.15.0
-pytest==9.1.1
 python-dotenv==1.2.3
-python-multipart==0.0.32
 PyYAML==6.0.3
-SQLAlchemy==2.0.52
-uvicorn==0.52.4
+
+# --- Security ----------------------------------------------------------------
+# Argon2id password hashing. Without this the app cannot hash or verify a
+# password, so sign-up fails on the first attempt.
+argon2-cffi==25.1.0
+# Address validation at registration. Without it, registration raises.
+email-validator==2.3.0
+
+# --- Integrations ------------------------------------------------------------
+httpx==0.28.1
+APScheduler==3.11.3
+anthropic==1.2.0              # optional: without a key the deterministic engine runs

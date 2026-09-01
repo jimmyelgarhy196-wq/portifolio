@@ -56,11 +56,23 @@ made that it offers an unrestricted real-time market-data API.
 
 ---
 
+## Run it in a container
+
+```bash
+cp .env.example .env      # fill in POSTGRES_PASSWORD and EGX_AUTH_SECRET
+docker compose up -d --build
+```
+
+Brings up the application, PostgreSQL, and a separate scheduler container.
+`Dockerfile`, `docker-compose.yml`, `fly.toml`, `railway.json` and
+`deploy/nginx.conf` are all in the repository — see
+[`DEPLOYMENT.md`](DEPLOYMENT.md) §11.
+
 ## Quick start
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt          # add -r requirements-dev.txt to run the tests
 
 cp .env.example .env
 python -c "import secrets; print('EGX_AUTH_SECRET=' + secrets.token_urlsafe(48))" >> .env
@@ -196,7 +208,7 @@ fire on a generated price.
 |---|---|
 | [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Architecture and build plan |
 | [`LEGAL.md`](LEGAL.md) | Regulatory position and the outstanding counsel review |
-| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Production deployment and the go-live checklist |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Production deployment, containers, and the go-live checklist |
 | [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | Connecting a licensed market-data provider |
 | [`database/SCHEMA.md`](database/SCHEMA.md) | Generated schema reference |
 

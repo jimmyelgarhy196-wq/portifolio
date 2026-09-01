@@ -17,7 +17,18 @@ def main() -> int:
     parser.add_argument("--host", default=settings.host)
     parser.add_argument("--port", type=int, default=settings.port)
     parser.add_argument("--reload", action="store_true", help="auto-reload on code changes")
+    parser.add_argument(
+        "--scheduler-only", action="store_true",
+        help="run the scheduled jobs with no HTTP server (the scheduler container)",
+    )
     args = parser.parse_args()
+
+    if args.scheduler_only:
+        from backend.core.logging_config import configure_logging
+        from backend.jobs.scheduler import run_forever
+
+        configure_logging()
+        return run_forever()
 
     import uvicorn
 

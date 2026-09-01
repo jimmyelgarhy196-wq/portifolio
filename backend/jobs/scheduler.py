@@ -61,6 +61,38 @@ def daily_snapshot_job() -> None:
         )
 
 
+def user_alerts_job() -> None:
+    """Evaluate subscriber alerts and email the ones that fired.
+
+    Runs through the trading session rather than once a day, because an alert
+    that arrives after the close is not an alert. It never fires on
+    demonstration data — see :mod:`backend.notify.user_alerts`.
+    """
+    from backend.core.database import session_scope
+    from backend.notify.user_alerts import run_user_alerts
+
+    with session_scope() as session:
+        results = run_user_alerts(session)
+    triggered = sum(1 for r in results if r.triggered)
+    if triggered:
+        logger.info("Alert sweep: %d of %d alerts fired", triggered, len(results))
+
+
+def expire_subscriptions_job() -> None:
+    """Retire subscriptions whose paid period has ended.
+
+    Entitlement already checks the period end on every request, so this only
+    tidies the stored status; access is never granted by a stale row.
+    """
+    from backend.billing.subscriptions import expire_due_subscriptions
+    from backend.core.database import session_scope
+
+    with session_scope() as session:
+        count = expire_due_subscriptions(session)
+    if count:
+        logger.info("Expired %d subscription(s) past their paid period", count)
+
+
 def start_scheduler() -> Any | None:
     """Start the background scheduler if enabled. Returns it, or None."""
     global _scheduler
@@ -97,13 +129,66 @@ def start_scheduler() -> Any | None:
                     timezone=settings.timezone),
         id="daily_snapshot", replace_existing=True, max_instances=1,
     )
+    # Every 15 minutes through the EGX session, Sunday to Thursday.
+    scheduler.add_job(
+        user_alerts_job,
+        CronTrigger(minute="*/15", hour="10-14", day_of_week="sun,mon,tue,wed,thu",
+                    timezone=settings.timezone),
+        id="user_alerts", replace_existing=True, max_instances=1,
+    )
+    scheduler.add_job(
+        expire_subscriptions_job,
+        CronTrigger(hour=3, minute=0, timezone=settings.timezone),
+        id="expire_subscriptions", replace_existing=True, max_instances=1,
+    )
     scheduler.start()
     _scheduler = scheduler
     logger.info(
-        "Scheduler started (timezone %s): weekly '%s', daily snapshot 16:30 Sun-Thu",
+        "Scheduler started (timezone %s): weekly '%s', daily snapshot 16:30, "
+        "alert sweep every 15m during the session, subscription expiry 03:00",
         settings.timezone, settings.weekly_cron,
     )
     return scheduler
+
+
+def run_forever() -> int:
+    """Run the scheduler as its own process, with no HTTP server.
+
+    Used by the ``scheduler`` container. The web workers keep
+    ``EGX_SCHEDULER_ENABLED=false`` so the weekly report is not generated once
+    per worker — this process is the single place jobs run.
+    """
+    import signal
+    import threading
+
+    from backend.core.database import init_database
+
+    settings = get_settings()
+    if not settings.scheduler_enabled:
+        logger.error(
+            "EGX_SCHEDULER_ENABLED is false, so there is nothing to run. "
+            "Set it to true on the scheduler process only."
+        )
+        return 1
+
+    init_database()
+    if start_scheduler() is None:
+        return 1
+
+    stop = threading.Event()
+
+    def handle(signum: int, _frame: Any) -> None:
+        logger.info("Received signal %s, shutting the scheduler down", signum)
+        stop.set()
+
+    signal.signal(signal.SIGTERM, handle)
+    signal.signal(signal.SIGINT, handle)
+
+    logger.info("Scheduler process ready. Jobs: %s",
+                ", ".join(j["id"] for j in scheduler_status()["jobs"]))
+    stop.wait()
+    shutdown_scheduler()
+    return 0
 
 
 def shutdown_scheduler() -> None:
