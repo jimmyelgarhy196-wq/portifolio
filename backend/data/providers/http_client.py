@@ -52,6 +52,7 @@ class HttpFetcher:
         max_retries: int | None = None,
         rate_limit_per_second: float | None = None,
         headers: dict[str, str] | None = None,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
         settings = get_settings()
         self.base_url = base_url.rstrip("/")
@@ -65,13 +66,17 @@ class HttpFetcher:
             else settings.http_rate_limit_per_second
         )
         self._headers = {"User-Agent": USER_AGENT, **(headers or {})}
+        #: Injectable so provider mappings can be tested against recorded vendor
+        #: responses without a network call or a paid API key.
+        self._transport = transport
         self._client: httpx.Client | None = None
 
     @property
     def client(self) -> httpx.Client:
         if self._client is None:
             self._client = httpx.Client(
-                timeout=self.timeout, headers=self._headers, follow_redirects=True
+                timeout=self.timeout, headers=self._headers, follow_redirects=True,
+                transport=self._transport,
             )
         return self._client
 

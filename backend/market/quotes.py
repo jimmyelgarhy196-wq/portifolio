@@ -34,7 +34,9 @@ from sqlalchemy.orm import Session
 
 from backend.core.config import get_settings
 from backend.core.logging_config import EVENT_PROVIDER_FAILURE, get_logger, log_event
+from backend.data.providers.base import ProviderUnavailable
 from backend.data.saas_models import DataSourceRecord, Quote
+from backend.market.live_providers import PRESETS, RestQuoteProvider, load_vendor_spec
 from backend.market.status import MarketStatus, market_state
 
 logger = get_logger(__name__)
@@ -267,49 +269,109 @@ class StoredPriceQuoteProvider(QuoteProvider):
 
 
 class LicensedQuoteProvider(QuoteProvider):
-    """Slot for a licensed EGX market-data vendor.
+    """A licensed EGX market-data vendor, called over its documented REST API.
 
-    Deliberately refuses to serve anything until credentials and an endpoint
-    exist. It does not fall back to demo data: a silent downgrade would put
-    fabricated prices behind a "live" label, which is the one failure this
-    architecture is built to prevent.
+    Two things must both be true before this provider will serve anything: a
+    vendor must be named (``EGX_MARKET_DATA_VENDOR``, or a spec file) and a key
+    must be present (``EGX_MARKET_DATA_API_KEY``). Either one alone is a
+    misconfiguration, and a misconfiguration serves nothing.
+
+    It never falls back to demo data. A silent downgrade would put fabricated
+    prices behind a "live" label, which is the one failure this architecture
+    exists to prevent — so when the vendor is down, the platform shows stale or
+    unavailable, and says which.
     """
 
     name = "licensed"
     display_name = "Licensed EGX market data"
     requires_credentials = True
 
-    def __init__(self) -> None:
-        self.delayed_minutes = get_settings().quote_delay_minutes
+    def __init__(self, client: "RestQuoteProvider | None" = None) -> None:
+        settings = get_settings()
+        self.delayed_minutes = settings.quote_delay_minutes
+        self._client = client
+        self._spec = None
+        self._config_error: str | None = None
+        if client is not None:
+            self._spec = client.spec
+            self.display_name = f"{client.spec.display_name} (licensed feed)"
+            self.delayed_minutes = client.delayed_minutes
+            return
+        try:
+            self._spec = load_vendor_spec()
+        except ProviderUnavailable as exc:
+            self._config_error = str(exc)
+        if self._spec is not None:
+            self.display_name = f"{self._spec.display_name} (licensed feed)"
 
+    # -- availability -------------------------------------------------------
     def is_available(self) -> bool:
-        return bool(get_settings().market_data_api_key)
+        if self._client is not None:
+            return True
+        return bool(get_settings().market_data_api_key) and self._spec is not None
 
     def unavailable_reason(self) -> str | None:
-        if not self.is_available():
+        if self.is_available():
+            return None
+        if self._config_error:
+            return self._config_error
+        has_key = bool(get_settings().market_data_api_key)
+        if self._spec is None and not has_key:
             return (
-                "No market-data credentials configured. Set EGX_MARKET_DATA_API_KEY "
-                "and implement the vendor call in LicensedQuoteProvider.get_quotes()."
+                "No live feed attached. Set EGX_MARKET_DATA_VENDOR (or "
+                "EGX_MARKET_DATA_SPEC_PATH) and EGX_MARKET_DATA_API_KEY to go live."
             )
-        return None
+        if self._spec is None:
+            return (
+                "A market-data key is set but no vendor is named. Set "
+                "EGX_MARKET_DATA_VENDOR to one of: "
+                f"{', '.join(sorted(PRESETS))} — or point "
+                "EGX_MARKET_DATA_SPEC_PATH at a vendor spec file."
+            )
+        return (
+            f"Vendor {self._spec.display_name} is configured but "
+            "EGX_MARKET_DATA_API_KEY is empty."
+        )
+
+    # -- fetch --------------------------------------------------------------
+    def _build_client(self) -> "RestQuoteProvider":
+        if self._client is None:
+            assert self._spec is not None  # guarded by is_available()
+            self._client = RestQuoteProvider(
+                self._spec, get_settings().market_data_api_key,
+                delayed_minutes=self.delayed_minutes,
+            )
+        return self._client
 
     def get_quotes(self, tickers: Sequence[str]) -> dict[str, QuoteData]:
         if not self.is_available():
             return {}
-        # ------------------------------------------------------------------
-        # Implement the vendor request here. Map the response onto QuoteData,
-        # set source to the vendor's name and delayed_minutes to the delay your
-        # licence actually grants. Return only tickers the vendor covered.
-        # ------------------------------------------------------------------
-        raise NotImplementedError(
-            "LicensedQuoteProvider.get_quotes() is a connection point, not an "
-            "implementation. Add the vendor API call here."
-        )
+        client = self._build_client()
+        state = market_state()
+        raw = client.fetch(tickers)
+
+        out: dict[str, QuoteData] = {}
+        for ticker, values in raw.items():
+            out[ticker] = QuoteData(
+                ticker=ticker,
+                source=client.spec.name,
+                # Never derived from vendor payload: this path is real data by
+                # construction, and the demo path is fake by construction.
+                is_demo=False,
+                delayed_minutes=self.delayed_minutes,
+                market_status=state.status.value,
+                **values,
+            )
+        return out
 
     def status_note(self) -> str:
-        if self.is_available():
-            return f"Credentials present. Quotes delayed {self.delayed_minutes} minutes."
-        return self.unavailable_reason() or ""
+        if not self.is_available():
+            return self.unavailable_reason() or ""
+        delay = self.delayed_minutes
+        timing = "real time" if delay == 0 else f"delayed {delay} minutes"
+        spec = self._spec or (self._client.spec if self._client else None)
+        vendor = spec.display_name if spec else "vendor"
+        return f"Live feed: {vendor}, {timing}, as configured by your licence."
 
 
 # ---------------------------------------------------------------------------

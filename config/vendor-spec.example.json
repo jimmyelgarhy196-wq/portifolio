@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "Template for a vendor with no built-in preset. Copy, edit, and point",
+    "EGX_MARKET_DATA_SPEC_PATH at it. No code change is needed for any vendor",
+    "that returns JSON.",
+    "",
+    "'fields' maps GMG quote fields to dotted paths inside one vendor row.",
+    "Mappable: price previous_close open day_high day_low volume turnover",
+    "trades week52_high week52_low market_cap currency quote_time.",
+    "'price' is required. Anything you cannot map is left unknown and renders",
+    "as 'N/A — data unavailable' rather than being estimated."
+  ],
+  "name": "my-vendor",
+  "display_name": "My Broker Feed",
+  "url": "https://api.example.com/v1/quotes",
+  "auth": "header",
+  "auth_header": "Authorization",
+  "auth_header_format": "Bearer {key}",
+  "params": {},
+  "batch": true,
+  "batch_separator": ",",
+  "max_batch": 25,
+  "root": "data",
+  "symbol_key": "symbol",
+  "fields": {
+    "price": "last",
+    "previous_close": "prevClose",
+    "open": "open",
+    "day_high": "high",
+    "day_low": "low",
+    "volume": "volume",
+    "currency": "currency",
+    "quote_time": "asOf"
+  },
+  "time_format": "iso",
+  "symbol_suffix": ".CA",
+  "expect_currency": "EGP",
+  "docs": "https://api.example.com/docs"
+}

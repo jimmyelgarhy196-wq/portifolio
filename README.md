@@ -100,6 +100,33 @@ python scripts/run_server.py
 Delete the database and ingest from a licensed provider before showing anything
 to a customer.
 
+### Going live on real prices
+
+Attaching a licensed feed takes three settings and no code:
+
+```bash
+EGX_MARKET_DATA_VENDOR=eodhd          # or twelvedata, or a JSON spec file
+EGX_MARKET_DATA_API_KEY=your-key
+EGX_QUOTE_DELAY_MINUTES=0             # what your licence actually grants
+```
+
+Verify before trusting a single price — it exits non-zero if the feed is not
+usable, so it works as a deployment gate:
+
+```bash
+python scripts/verify_market_data.py --tickers COMI,HRHO,SWDY
+```
+
+The platform then switches itself over: the `DEMO DATA` banner becomes a `LIVE`
+banner, the scheduler starts polling quotes, and alerts begin firing. A vendor
+with no preset is described in a JSON file rather than in code
+(`config/vendor-spec.example.json`).
+
+Read [`docs/GOING_LIVE.md`](docs/GOING_LIVE.md) first — it covers the part that
+is not a programming problem: **redistribution licensing**. Showing exchange
+prices to paying subscribers is licensed differently from using them yourself,
+and an "internal use" plan does not cover a SaaS no matter how the API behaves.
+
 ---
 
 ## What subscribers get
@@ -209,6 +236,7 @@ fire on a generated price.
 | [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Architecture and build plan |
 | [`LEGAL.md`](LEGAL.md) | Regulatory position and the outstanding counsel review |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Production deployment, containers, and the go-live checklist |
+| [`docs/GOING_LIVE.md`](docs/GOING_LIVE.md) | **Attaching a real market-data feed**, and the licensing to buy first |
 | [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | Connecting a licensed market-data provider |
 | [`database/SCHEMA.md`](database/SCHEMA.md) | Generated schema reference |
 

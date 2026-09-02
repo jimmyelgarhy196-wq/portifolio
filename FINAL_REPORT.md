@@ -55,14 +55,18 @@ Every quote carries `source`, `quote_time`, `retrieved_at`, `delayed_minutes` an
 subscription lifecycle and entitlement, server-side access control, the admin panel,
 watchlists, portfolio tracking, alerts (evaluation and email), the screener, all
 scoring engines, the DCF and multiples valuation with sensitivity, rating derivation,
-charting, search, the weekly report, and the audit log.
+charting, search, the weekly report, the audit log, and **the live market-data
+client** — a vendor's REST feed is called, validated and stored, with two shipped
+presets and a JSON spec layer that supports any other JSON vendor without a code
+change. Set a vendor and a key and the platform runs on real prices; see
+`docs/GOING_LIVE.md`.
 
 **Deliberate connection points, not placeholders** — each has the correct interface,
 refuses rather than faking, and says what is missing:
 
 | Point | Where | Behaviour without it |
 |---|---|---|
-| Licensed quote feed | `LicensedQuoteProvider.get_quotes()` | Raises; falls back to stored, then labelled demo |
+| Market-data **licence** (not code) | `EGX_MARKET_DATA_VENDOR` + key | Serves nothing; falls back to stored, then labelled demo |
 | Payment gateway | `PaymentProvider` subclass | Manual mode: records intent, charges nothing |
 | Official index levels | `IndexLevelProvider` | Composite shown, labelled as not official |
 
@@ -73,7 +77,7 @@ by the brief.
 
 | Service | Purpose | Without it |
 |---|---|---|
-| Licensed EGX market-data vendor | Real-time or delayed quotes | Demo data, clearly labelled |
+| Licensed EGX market-data vendor | Real-time or delayed quotes. **Client is built**; a licence must be bought, including redistribution rights for showing prices to subscribers | Demo data, clearly labelled |
 | Egyptian payment gateway | Collecting subscriptions | Manual confirmation by an administrator |
 | SMTP or transactional-email API | Verification, resets, alerts, reports | Emails logged, not delivered |
 | PostgreSQL | Production database | SQLite works but is not recommended |

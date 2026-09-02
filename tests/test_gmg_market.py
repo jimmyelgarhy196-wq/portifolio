@@ -86,13 +86,16 @@ class TestQuoteProviders:
         downgrade that puts generated prices behind a live label."""
         from backend.core.config import get_settings
 
-        monkeypatch.setenv("EGX_MARKET_DATA_API_KEY", "present-but-unimplemented")
+        # A key on its own is not a feed: without a named vendor there is
+        # nothing to call, and the provider must serve nothing rather than
+        # quietly handing back generated prices.
+        monkeypatch.setenv("EGX_MARKET_DATA_API_KEY", "key-without-a-vendor")
         get_settings.cache_clear()
         try:
             provider = Q.LicensedQuoteProvider()
-            assert provider.is_available()
-            with pytest.raises(NotImplementedError):
-                provider.get_quotes(["COMI"])
+            assert not provider.is_available()
+            assert provider.get_quotes(["COMI"]) == {}
+            assert "no vendor is named" in (provider.unavailable_reason() or "")
         finally:
             monkeypatch.delenv("EGX_MARKET_DATA_API_KEY", raising=False)
             get_settings.cache_clear()
@@ -100,7 +103,10 @@ class TestQuoteProviders:
     def test_licensed_provider_serves_nothing_without_credentials(self, db):
         provider = Q.LicensedQuoteProvider()
         assert provider.get_quotes(["COMI"]) == {}
-        assert "credentials" in (provider.unavailable_reason() or "").lower()
+        reason = (provider.unavailable_reason() or "").lower()
+        assert "no live feed attached" in reason
+        # The message must say what to set, not merely that something is wrong.
+        assert "egx_market_data_vendor" in reason and "egx_market_data_api_key" in reason
 
     def test_stored_provider_never_invents_a_missing_ticker(self, db, universe):
         assert Q.StoredPriceQuoteProvider(db).get_quotes(["NOSUCH"]) == {}

@@ -154,7 +154,20 @@ class Settings(BaseSettings):
 
     # --- market data ------------------------------------------------------------
     market_data_api_key: str = ""
+    #: Which licensed vendor to call. "" or "none" means no live feed is
+    #: attached and the platform will not pretend otherwise. Built-in presets
+    #: are listed in backend/market/live_providers.PRESETS.
+    market_data_vendor: str = ""
+    #: Path to a JSON vendor spec. Overrides the preset, so a vendor whose
+    #: response shape differs from the preset is a config fix, not a release.
+    market_data_spec_path: str = ""
+    #: Path to a JSON file of per-vendor ticker -> vendor symbol overrides.
+    symbol_map_path: str = "config/symbol_map.json"
+    #: How often the scheduler refreshes quotes while the market is open.
+    quote_refresh_seconds: int = 60
     #: Minutes a quote may be delayed by the provider; surfaced in the UI.
+    #: Set this to what your licence actually grants: 0 for real-time, 15 for a
+    #: standard delayed feed. It is displayed to users verbatim.
     quote_delay_minutes: int = 15
     market_open_time: str = "10:00"
     market_close_time: str = "14:30"

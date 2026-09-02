@@ -1,0 +1,11 @@
+{
+  "_comment": [
+    "Per-vendor overrides: GMG ticker -> the symbol that vendor uses.",
+    "Only exceptions belong here. Anything absent uses TICKER + the vendor's",
+    "symbol_suffix (e.g. COMI -> COMI.EGX for eodhd).",
+    "Vendors disagree about EGX symbology, so expect to fill this in after",
+    "running: python scripts/verify_market_data.py --raw"
+  ],
+  "eodhd": {},
+  "twelvedata": {}
+}

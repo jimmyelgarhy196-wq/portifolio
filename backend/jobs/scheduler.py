@@ -93,6 +93,41 @@ def expire_subscriptions_job() -> None:
         logger.info("Expired %d subscription(s) past their paid period", count)
 
 
+def quote_refresh_job() -> None:
+    """Pull live quotes for the whole universe while the market is open.
+
+    This is the job that makes the platform real-time. It runs only when a
+    licensed feed is attached — with no vendor configured there is nothing to
+    poll, and polling the demo provider on a timer would produce a tape that
+    moves like a live one but is not, which is exactly the impression this
+    codebase refuses to give.
+
+    Refresh cadence is :attr:`Settings.quote_refresh_seconds`. Set it no faster
+    than your licence and rate limit allow; the vendor is called once per cycle
+    for the whole universe, not once per ticker per visitor.
+    """
+    from backend.core.database import session_scope
+    from backend.market.quotes import LicensedQuoteProvider, refresh_quotes
+    from backend.data.universe import get_tickers
+
+    provider = LicensedQuoteProvider()
+    if not provider.is_available():
+        logger.debug("Quote refresh skipped: %s", provider.unavailable_reason())
+        return
+
+    with session_scope() as session:
+        tickers = get_tickers(session)
+        if not tickers:
+            return
+        stored = refresh_quotes(session, tickers, provider=provider)
+    missing = len(tickers) - len(stored)
+    logger.info(
+        "Quote refresh: %d of %d tickers updated from %s%s",
+        len(stored), len(tickers), provider.display_name,
+        f" ({missing} not covered by the vendor)" if missing else "",
+    )
+
+
 def start_scheduler() -> Any | None:
     """Start the background scheduler if enabled. Returns it, or None."""
     global _scheduler
@@ -108,6 +143,7 @@ def start_scheduler() -> Any | None:
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         from apscheduler.triggers.cron import CronTrigger
+        from apscheduler.triggers.interval import IntervalTrigger
     except ImportError:  # pragma: no cover
         logger.error("APScheduler is not installed; automated runs are unavailable.")
         return None
@@ -136,6 +172,25 @@ def start_scheduler() -> Any | None:
                     timezone=settings.timezone),
         id="user_alerts", replace_existing=True, max_instances=1,
     )
+    # Live quotes, while the market is open. Registered only when a licensed
+    # feed is attached, so a demo instance has no polling job at all.
+    from backend.market.quotes import LicensedQuoteProvider
+
+    quote_provider = LicensedQuoteProvider()
+    if quote_provider.is_available():
+        seconds = max(5, settings.quote_refresh_seconds)
+        scheduler.add_job(
+            quote_refresh_job,
+            IntervalTrigger(seconds=seconds, timezone=settings.timezone),
+            id="quote_refresh", replace_existing=True, max_instances=1,
+            coalesce=True, misfire_grace_time=seconds,
+        )
+        logger.info(
+            "Live quote refresh every %ds from %s", seconds, quote_provider.display_name
+        )
+    else:
+        logger.info("No live quote job: %s", quote_provider.unavailable_reason())
+
     scheduler.add_job(
         expire_subscriptions_job,
         CronTrigger(hour=3, minute=0, timezone=settings.timezone),
