@@ -163,6 +163,11 @@ class Settings(BaseSettings):
     market_data_spec_path: str = ""
     #: Path to a JSON file of per-vendor ticker -> vendor symbol overrides.
     symbol_map_path: str = "config/symbol_map.json"
+    #: URL of the EGX end-of-day bulletin, for the daily import job. Empty means
+    #: the file is downloaded by hand and passed with --file.
+    bulletin_url: str = ""
+    #: JSON map of bulletin field -> column header, when the aliases miss.
+    bulletin_map_path: str = ""
     #: How often the scheduler refreshes quotes while the market is open.
     quote_refresh_seconds: int = 60
     #: Minutes a quote may be delayed by the provider; surfaced in the UI.

@@ -15,6 +15,7 @@ SQLAlchemy==2.0.52
 psycopg[binary]==3.3.5        # PostgreSQL driver; SQLite needs no driver
 numpy==2.4.6
 pandas==3.0.5
+openpyxl==3.1.5              # reading EGX bulletins published as .xlsx
 lxml==6.1.2
 
 # --- Configuration -----------------------------------------------------------

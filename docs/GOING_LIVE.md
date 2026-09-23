@@ -57,6 +57,79 @@ grow one.
 
 ---
 
+## 1b. The cheapest real data: EGX's own bulletin
+
+Before you buy anything, there is a source you already have access to — the
+Egyptian Exchange publishes its own end-of-day trading data on egx.com.eg. It is
+the **primary** source, which makes it the most defensible input this platform
+can take, and its terms are negotiated with EGX rather than with a reseller.
+
+Download the file and import it:
+
+```bash
+# always look first — this writes nothing
+python scripts/import_egx_bulletin.py --file ~/Downloads/EGX_2026-09-22.xlsx --dry-run
+
+# then, once the column mapping looks right
+python scripts/import_egx_bulletin.py --file ~/Downloads/EGX_2026-09-22.xlsx
+```
+
+Set `EGX_BULLETIN_URL` to fetch it automatically, and a daily cron needs no
+arguments at all.
+
+**The format is data, not code.** EGX has changed its site and its file layout
+more than once, publishes in Arabic and in English, and ships CSV in some places
+and Excel in others. Nothing is read by column position. Headers are matched by
+alias in both languages, the match is printed for you to check, and anything the
+matcher gets wrong is corrected in a JSON file:
+
+```bash
+echo '{"close": "Closing Price", "ticker": "Reuters Code"}' > egx-map.json
+python scripts/import_egx_bulletin.py --file b.xlsx --map egx-map.json
+```
+
+The dry run prints the mapping, a sample of parsed rows, and everything it
+rejected with a reason:
+
+```
+  COLUMN MAPPING — check this before importing
+    ticker           الكود
+    close            سعر الإغلاق
+    volume           حجم التداول
+  · trades           — not present —
+
+  REJECTED (1) — these are not stored
+     1  no closing price: SUSP
+```
+
+What it refuses to do, and why each one matters:
+
+- **A file whose required columns cannot be identified is refused whole**, with
+  every header listed. Reading by position is how a layout change silently
+  imports one company's price under another company's name.
+- **A row with no usable positive close is rejected and counted.** A suspended
+  stock shows `N/A`, never `0.00`.
+- **An undated bulletin is never stamped with today's date.** The date comes
+  from `--date`, a date column, or the filename — in that order. A file
+  downloaded on Sunday covering Thursday would otherwise be stamped with a day
+  on which nothing traded.
+- **A code outside your covered universe is counted and skipped**, not turned
+  into a company row from a spreadsheet cell.
+
+### What this gives you, and what it does not
+
+This is **end-of-day data**. It is stored with the bulletin's own trading date
+and displayed with its true age — the platform shows "as of 22 Sep" rather than
+implying a live tape. Scores, screens, valuations, the weekly report and
+portfolio marks all run correctly on it.
+
+It is **not real-time**, so intraday alerts and a moving dashboard still need a
+licensed live feed (§2 below). And it does not settle the licensing question:
+redistributing EGX data to paying subscribers is EGX's decision, whether the
+data came from their website or from a vendor. Ask them.
+
+---
+
 ## 2. Attach the feed
 
 ### If your vendor has a preset (EODHD, Twelve Data)
